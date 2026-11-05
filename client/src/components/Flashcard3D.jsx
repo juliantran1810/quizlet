@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Volume2, Sparkles, CheckCircle2, RotateCcw, Lightbulb } from 'lucide-react';
+import { Volume2, Sparkles, CheckCircle2, RotateCcw, Lightbulb, PenLine } from 'lucide-react';
+import { speak, detectLang } from '../utils/speech';
+import HanziWriter from './HanziWriter';
 
 export default function Flashcard3D({
   card,
@@ -13,19 +15,20 @@ export default function Flashcard3D({
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [showStroke, setShowStroke] = useState(false);
 
-  // Reset trạng thái lật thẻ khi chuyển sang thẻ khác
+  // Kiểm tra thuật ngữ có phải chữ Hán không
+  const isChinese = /[\u4e00-\u9fff\u3400-\u4dbf]/.test(card?.term || '');
+
   useEffect(() => {
     setIsFlipped(false);
     setShowHint(false);
+    setShowStroke(false);
   }, [currentIndex, card]);
 
-  // Lắng nghe phím tắt: Space để lật thẻ, Trái/Phải để chuyển bài
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Bỏ qua nếu người dùng đang gõ trong input/textarea
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
-
       if (e.code === 'Space') {
         e.preventDefault();
         setIsFlipped((prev) => !prev);
@@ -37,34 +40,15 @@ export default function Flashcard3D({
         onPrev && onPrev();
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onNext, onPrev]);
-
-  // Tính năng phát âm Text-To-Speech (Web Speech API)
-  const handleSpeak = (text, e) => {
-    e.stopPropagation();
-    if (!('speechSynthesis' in window)) {
-      alert('Trình duyệt của bạn không hỗ trợ tính năng đọc âm thanh');
-      return;
-    }
-
-    // Hủy các câu đọc trước đó nếu còn đang đọc
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    // Nhận diện tiếng Anh nếu chứa ký tự latin phổ thông hoặc tiếng Việt
-    utterance.lang = /^[a-zA-Z0-9\s.,!?'"()-]+$/.test(text) ? 'en-US' : 'vi-VN';
-    utterance.rate = 0.9; // Tốc độ vừa phải dễ nghe
-    window.speechSynthesis.speak(utterance);
-  };
 
   if (!card) return null;
 
   return (
     <div className="w-full max-w-2xl mx-auto select-none">
-      {/* 3D Card Container */}
+      {/* 3D Card */}
       <div
         className="w-full h-80 sm:h-96 cursor-pointer perspective-1000"
         onClick={() => setIsFlipped((prev) => !prev)}
@@ -74,29 +58,35 @@ export default function Flashcard3D({
           animate={{ rotateY: isFlipped ? 180 : 0 }}
           transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
         >
-          {/* MẶT TRƯỚC: THUẬT NGỮ (TERM) */}
+          {/* MẶT TRƯỚC: THUẬT NGỮ */}
           <div className="absolute inset-0 backface-hidden bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between shadow-sm hover:border-indigo-300 transition-colors">
-            {/* Top Toolbar mặt trước */}
             <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
               <span className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 font-semibold rounded-full">
-                <Sparkles className="w-3.5 h-3.5" /> Thuật ngữ (Term)
+                <Sparkles className="w-3.5 h-3.5" />
+                {isChinese ? '汉字 Chữ Hán' : 'Thuật ngữ (Term)'}
               </span>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {card.hint && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowHint((prev) => !prev);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setShowHint((p) => !p); }}
                     title="Gợi ý"
                     className="p-2 rounded-full hover:bg-amber-50 text-amber-500 transition"
                   >
                     <Lightbulb className="w-4 h-4" />
                   </button>
                 )}
+                {isChinese && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowStroke((p) => !p); }}
+                    title="Xem nét bút"
+                    className="p-2 rounded-full hover:bg-indigo-50 text-indigo-500 transition"
+                  >
+                    <PenLine className="w-4 h-4" />
+                  </button>
+                )}
                 <button
-                  onClick={(e) => handleSpeak(card.term, e)}
+                  onClick={(e) => { e.stopPropagation(); speak(card.term); }}
                   title="Phát âm"
                   className="p-2 rounded-full hover:bg-indigo-50 text-indigo-600 transition"
                 >
@@ -105,39 +95,52 @@ export default function Flashcard3D({
               </div>
             </div>
 
-            {/* Nội dung trung tâm */}
-            <div className="flex flex-col items-center justify-center text-center my-auto px-4">
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-800 tracking-tight leading-snug">
+            {/* Chữ Hán + Pinyin */}
+            <div className="flex flex-col items-center justify-center text-center my-auto px-4 gap-2">
+              <h2 className={`font-extrabold text-slate-800 tracking-tight leading-snug ${isChinese ? 'text-5xl sm:text-6xl' : 'text-3xl sm:text-4xl'}`}>
                 {card.term}
               </h2>
+
+              {/* Pinyin hiển thị ngay dưới chữ Hán */}
+              {card.pinyin && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-semibold text-indigo-500 tracking-widest">
+                    {card.pinyin}
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); speak(card.pinyin, 'zh-CN'); }}
+                    title="Nghe phiên âm"
+                    className="p-1 rounded-full hover:bg-indigo-50 text-indigo-400 transition"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
 
               {showHint && card.hint && (
                 <motion.p
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm italic"
+                  className="mt-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm italic"
                 >
-                  💡 Gợi ý: {card.hint}
+                  💡 {card.hint}
                 </motion.p>
               )}
             </div>
 
-            {/* Bottom info */}
             <div className="text-center text-xs text-slate-400 flex items-center justify-center gap-2">
               <span>Bấm chuột hoặc nhấn <kbd className="px-2 py-0.5 bg-slate-100 rounded border border-slate-300 font-mono text-[11px] text-slate-600">Space</kbd> để lật thẻ</span>
             </div>
           </div>
 
-          {/* MẶT SAU: ĐỊNH NGHĨA (DEFINITION) */}
+          {/* MẶT SAU: ĐỊNH NGHĨA */}
           <div className="absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white rounded-3xl p-8 flex flex-col justify-between shadow-2xl">
-            {/* Top Toolbar mặt sau */}
             <div className="flex items-center justify-between text-xs text-indigo-200">
               <span className="px-3 py-1 bg-white/10 backdrop-blur-sm text-indigo-200 font-semibold rounded-full">
-                Định nghĩa (Definition)
+                {isChinese ? '中文意思 Nghĩa tiếng Việt' : 'Định nghĩa (Definition)'}
               </span>
-
               <button
-                onClick={(e) => handleSpeak(card.definition, e)}
+                onClick={(e) => { e.stopPropagation(); speak(card.definition); }}
                 title="Phát âm định nghĩa"
                 className="p-2 rounded-full hover:bg-white/10 text-indigo-200 transition"
               >
@@ -145,13 +148,12 @@ export default function Flashcard3D({
               </button>
             </div>
 
-            {/* Nội dung định nghĩa */}
-            <div className="flex flex-col items-center justify-center text-center my-auto px-4 overflow-y-auto max-h-[220px]">
+            <div className="flex flex-col items-center justify-center text-center my-auto px-4 overflow-y-auto max-h-[220px] gap-3">
               {card.imageUrl && (
                 <img
                   src={card.imageUrl}
                   alt={card.term}
-                  className="w-28 h-28 object-cover rounded-xl mb-3 shadow border border-white/20"
+                  className="w-28 h-28 object-cover rounded-xl mb-2 shadow border border-white/20"
                 />
               )}
               <p className="text-2xl sm:text-3xl font-bold leading-relaxed text-indigo-50">
@@ -159,17 +161,26 @@ export default function Flashcard3D({
               </p>
             </div>
 
-            {/* Bottom indicator */}
             <div className="text-center text-xs text-indigo-300/70">
-              Nhấn <kbd className="px-2 py-0.5 bg-white/10 rounded border border-white/20 font-mono text-[11px] text-indigo-200">Space</kbd> để quay lại thuật ngữ
+              Nhấn <kbd className="px-2 py-0.5 bg-white/10 rounded border border-white/20 font-mono text-[11px] text-indigo-200">Space</kbd> để quay lại
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Action Buttons: Đánh dấu Đã thuộc / Học lại & Điều hướng */}
-      <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Nút đánh dấu tiến độ */}
+      {/* HanziWriter Panel — hiện khi bấm nút nét bút */}
+      {isChinese && showStroke && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4"
+        >
+          <HanziWriter characters={card.term} autoAnimate />
+        </motion.div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <button
             onClick={() => onMarkStatus(card._id, 'learning')}
@@ -180,7 +191,7 @@ export default function Flashcard3D({
             }`}
           >
             <RotateCcw className="w-4 h-4" />
-            Học lại (Still learning)
+            Học lại
           </button>
 
           <button
@@ -192,11 +203,10 @@ export default function Flashcard3D({
             }`}
           >
             <CheckCircle2 className="w-4 h-4" />
-            Đã thuộc (Mastered)
+            Đã thuộc
           </button>
         </div>
 
-        {/* Nút điều hướng Trái / Phải */}
         <div className="flex items-center gap-3">
           <button
             onClick={onPrev}
@@ -205,11 +215,9 @@ export default function Flashcard3D({
           >
             ← Thẻ trước
           </button>
-
           <span className="text-sm font-semibold text-slate-600">
             {currentIndex + 1} / {totalCards}
           </span>
-
           <button
             onClick={onNext}
             disabled={currentIndex === totalCards - 1}
@@ -222,4 +230,3 @@ export default function Flashcard3D({
     </div>
   );
 }
-

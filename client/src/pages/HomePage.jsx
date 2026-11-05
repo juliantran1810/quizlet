@@ -13,7 +13,7 @@ import {
   Plus,
 } from 'lucide-react';
 
-const CATEGORIES = ['All', 'Tiếng Anh', 'Công nghệ', 'Khoa học', 'Lịch sử', 'Y Dược', 'General'];
+const CATEGORIES = ['All', 'Tiếng Trung', 'Tiếng Anh', 'Công nghệ', 'Khoa học', 'Lịch sử', 'Y Dược', 'General'];
 
 export default function HomePage() {
   const [decks, setDecks] = useState([]);

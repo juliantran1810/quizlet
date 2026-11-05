@@ -12,6 +12,11 @@ const cardSchema = new mongoose.Schema(
       required: [true, 'Định nghĩa (definition) không được để trống'],
       trim: true,
     },
+    pinyin: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     hint: {
       type: String,
       default: '',

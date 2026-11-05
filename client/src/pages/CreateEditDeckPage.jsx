@@ -12,6 +12,7 @@ import {
   AlertCircle,
   HelpCircle,
   Image as ImageIcon,
+  Languages,
 } from 'lucide-react';
 
 export default function CreateEditDeckPage() {
@@ -22,11 +23,11 @@ export default function CreateEditDeckPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Tiếng Anh');
+  const [category, setCategory] = useState('Tiếng Trung');
   const [isPublic, setIsPublic] = useState(true);
   const [cards, setCards] = useState([
-    { term: '', definition: '', hint: '', imageUrl: '' },
-    { term: '', definition: '', hint: '', imageUrl: '' },
+    { term: '', pinyin: '', definition: '', hint: '', imageUrl: '' },
+    { term: '', pinyin: '', definition: '', hint: '', imageUrl: '' },
   ]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -66,7 +67,7 @@ export default function CreateEditDeckPage() {
   };
 
   const handleAddCard = () => {
-    setCards([...cards, { term: '', definition: '', hint: '', imageUrl: '' }]);
+    setCards([...cards, { term: '', pinyin: '', definition: '', hint: '', imageUrl: '' }]);
   };
 
   const handleRemoveCard = (index) => {
@@ -186,12 +187,13 @@ export default function CreateEditDeckPage() {
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm bg-white"
               >
-                <option value="Tiếng Anh">Tiếng Anh</option>
-                <option value="Công nghệ">Công nghệ</option>
-                <option value="Khoa học">Khoa học</option>
-                <option value="Lịch sử">Lịch sử</option>
-                <option value="Y Dược">Y Dược</option>
-                <option value="General">Chung (General)</option>
+                <option value="Tiếng Trung">🇨🇳 Tiếng Trung</option>
+                <option value="Tiếng Anh">🇺🇸 Tiếng Anh</option>
+                <option value="Công nghệ">💻 Công nghệ</option>
+                <option value="Khoa học">🔬 Khoa học</option>
+                <option value="Lịch sử">📜 Lịch sử</option>
+                <option value="Y Dược">🏥 Y Dược</option>
+                <option value="General">📚 Chung (General)</option>
               </select>
             </div>
 
@@ -255,31 +257,46 @@ export default function CreateEditDeckPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Thuật ngữ (Term) *
+                    Chữ Hán / Thuật ngữ (Term) *
                   </label>
                   <input
                     type="text"
                     required
                     value={card.term}
                     onChange={(e) => handleCardChange(index, 'term', e.target.value)}
-                    placeholder="VD: Biodegradable"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-semibold text-slate-800"
+                    placeholder="VD: 爱 hoặc Biodegradable"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-xl font-bold text-slate-800"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Định nghĩa / Nghĩa tiếng Việt *
+                    Nghĩa / Định nghĩa (Definition) *
                   </label>
                   <input
                     type="text"
                     required
                     value={card.definition}
                     onChange={(e) => handleCardChange(index, 'definition', e.target.value)}
-                    placeholder="VD: Có thể phân hủy sinh học tự nhiên"
+                    placeholder="VD: Yêu thương / Có thể phân hủy sinh học"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm text-slate-800"
                   />
                 </div>
+              </div>
+
+              {/* Pinyin row */}
+              <div className="pt-1">
+                <label className="flex items-center gap-1 text-xs font-semibold text-indigo-700 uppercase tracking-wider mb-1">
+                  <Languages className="w-3.5 h-3.5" />
+                  Phiên âm Pinyin (Tùy chọn — dành cho tiếng Trung)
+                </label>
+                <input
+                  type="text"
+                  value={card.pinyin || ''}
+                  onChange={(e) => handleCardChange(index, 'pinyin', e.target.value)}
+                  placeholder="VD: ài, nǐ hǎo, wǒ ài nǐ..."
+                  className="w-full px-4 py-2 rounded-xl border border-indigo-200 bg-indigo-50/40 focus:outline-none focus:border-indigo-500 text-sm font-medium text-indigo-700 tracking-wide"
+                />
               </div>
 
               {/* Optional Hint & Image */}

@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { deckService, progressService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import HanziWriter from '../components/HanziWriter';
+import { speak } from '../utils/speech';
 import {
   Layers,
   BrainCircuit,
@@ -13,8 +15,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   RotateCcw,
-  Sparkles,
-  Share2,
+  PenLine,
 } from 'lucide-react';
 
 export default function DeckDetailPage() {
@@ -53,12 +54,7 @@ export default function DeckDetailPage() {
   };
 
   const handleSpeak = (text) => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = /^[a-zA-Z0-9\s.,!?'"()-]+$/.test(text) ? 'en-US' : 'vi-VN';
-    utterance.rate = 0.9;
-    window.speechSynthesis.speak(utterance);
+    speak(text);
   };
 
   const handleDelete = async () => {
@@ -226,41 +222,60 @@ export default function DeckDetailPage() {
         </h2>
 
         <div className="space-y-3">
-          {deck.cards.map((card, idx) => (
-            <div
-              key={card._id || idx}
-              className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-slate-300 transition"
-            >
-              <div className="flex-1 border-b md:border-b-0 md:border-r border-slate-100 pb-3 md:pb-0 md:pr-6">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-bold text-slate-800">{card.term}</span>
-                  <button
-                    onClick={() => handleSpeak(card.term)}
-                    title="Phát âm"
-                    className="p-1 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
-                  >
-                    <Volume2 className="w-4 h-4" />
-                  </button>
-                </div>
-                {card.hint && (
-                  <p className="text-xs text-amber-600 mt-1">Gợi ý: {card.hint}</p>
-                )}
-              </div>
+          {deck.cards.map((card, idx) => {
+            const isChinese = /[\u4e00-\u9fff\u3400-\u4dbf]/.test(card.term || '');
+            return (
+              <div
+                key={card._id || idx}
+                className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col gap-3 hover:border-slate-300 transition"
+              >
+                {/* Row chính: Term + Definition */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  {/* Cột trái: Chữ Hán / Term + Pinyin */}
+                  <div className="flex-1 border-b md:border-b-0 md:border-r border-slate-100 pb-3 md:pb-0 md:pr-6">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold text-slate-800 ${isChinese ? 'text-2xl' : 'text-base'}`}>
+                        {card.term}
+                      </span>
+                      <button
+                        onClick={() => handleSpeak(card.term)}
+                        title="Phát âm"
+                        className="p-1 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
+                      >
+                        <Volume2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    {/* Pinyin hiển thị ngay dưới chữ Hán */}
+                    {card.pinyin && (
+                      <p className="text-sm font-semibold text-indigo-500 tracking-widest mt-1">
+                        {card.pinyin}
+                      </p>
+                    )}
+                    {card.hint && (
+                      <p className="text-xs text-amber-600 mt-1">💡 {card.hint}</p>
+                    )}
+                  </div>
 
-              <div className="flex-1 md:pl-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">{card.definition}</p>
+                  {/* Cột phải: Nghĩa */}
+                  <div className="flex-1 md:pl-6 flex items-center justify-between">
+                    <p className="text-sm font-medium text-slate-700">{card.definition}</p>
+                    {card.imageUrl && (
+                      <img
+                        src={card.imageUrl}
+                        alt={card.term}
+                        className="w-14 h-14 object-cover rounded-lg border border-slate-200 shrink-0 ml-4"
+                      />
+                    )}
+                  </div>
                 </div>
-                {card.imageUrl && (
-                  <img
-                    src={card.imageUrl}
-                    alt={card.term}
-                    className="w-14 h-14 object-cover rounded-lg border border-slate-200 shrink-0 ml-4"
-                  />
+
+                {/* HanziWriter — hiển thị inline cho chữ Hán */}
+                {isChinese && (
+                  <HanziWriter characters={card.term} />
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
