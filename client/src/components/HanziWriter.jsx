@@ -188,3 +188,4 @@ export default function HanziWriter({ characters, autoAnimate = false }) {
     </div>
   );
 }
+

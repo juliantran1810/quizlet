@@ -30,3 +30,4 @@ export function speak(text, forceLang = null, rate = 0.85) {
   utterance.rate = rate;
   window.speechSynthesis.speak(utterance);
 }
+

@@ -184,11 +184,10 @@ export default function Flashcard3D({
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <button
             onClick={() => onMarkStatus(card._id, 'learning')}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border transition shadow-sm ${
-              status === 'learning'
-                ? 'bg-amber-500 text-white border-amber-600 shadow-amber-200'
-                : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400 hover:text-amber-600'
-            }`}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border transition shadow-sm ${status === 'learning'
+              ? 'bg-amber-500 text-white border-amber-600 shadow-amber-200'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400 hover:text-amber-600'
+              }`}
           >
             <RotateCcw className="w-4 h-4" />
             Học lại
@@ -196,11 +195,10 @@ export default function Flashcard3D({
 
           <button
             onClick={() => onMarkStatus(card._id, 'mastered')}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border transition shadow-sm ${
-              status === 'mastered'
-                ? 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-200'
-                : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400 hover:text-emerald-600'
-            }`}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border transition shadow-sm ${status === 'mastered'
+              ? 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-200'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400 hover:text-emerald-600'
+              }`}
           >
             <CheckCircle2 className="w-4 h-4" />
             Đã thuộc

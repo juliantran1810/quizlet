@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { deckService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,25 @@ import {
   HelpCircle,
   Image as ImageIcon,
   Languages,
+  Tag,
+  ChevronDown,
 } from 'lucide-react';
+
+// Danh sách gợi ý chủ đề mặc định
+const SUGGESTED_CATEGORIES = [
+  '🇨🇳 Tiếng Trung',
+  '🇺🇸 Tiếng Anh',
+  '🇯🇵 Tiếng Nhật',
+  '🇰🇷 Tiếng Hàn',
+  '🇫🇷 Tiếng Pháp',
+  '💻 Công nghệ',
+  '🔬 Khoa học',
+  '📜 Lịch sử',
+  '🏥 Y Dược',
+  '📐 Toán học',
+  '🎵 Âm nhạc',
+  '📚 General',
+];
 
 export default function CreateEditDeckPage() {
   const { id } = useParams();
@@ -23,7 +41,10 @@ export default function CreateEditDeckPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Tiếng Trung');
+  const [category, setCategory] = useState('🇨🇳 Tiếng Trung');
+  const [categoryInput, setCategoryInput] = useState('');
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+  const categoryRef = useRef(null);
   const [isPublic, setIsPublic] = useState(true);
   const [cards, setCards] = useState([
     { term: '', pinyin: '', definition: '', hint: '', imageUrl: '' },
@@ -32,6 +53,17 @@ export default function CreateEditDeckPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Đóng dropdown gợi ý khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (categoryRef.current && !categoryRef.current.contains(e.target)) {
+        setShowCategorySuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Nếu là chế độ Sửa, tải thông tin bộ thẻ cũ
   useEffect(() => {
@@ -178,23 +210,97 @@ export default function CreateEditDeckPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            {/* Combobox Chủ đề tự do */}
+            <div ref={categoryRef} className="relative">
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                 Chủ đề / Thể loại
               </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm bg-white"
-              >
-                <option value="Tiếng Trung">🇨🇳 Tiếng Trung</option>
-                <option value="Tiếng Anh">🇺🇸 Tiếng Anh</option>
-                <option value="Công nghệ">💻 Công nghệ</option>
-                <option value="Khoa học">🔬 Khoa học</option>
-                <option value="Lịch sử">📜 Lịch sử</option>
-                <option value="Y Dược">🏥 Y Dược</option>
-                <option value="General">📚 Chung (General)</option>
-              </select>
+
+              {/* Badge chủ đề đang chọn */}
+              {category && (
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg">
+                    <Tag className="w-3 h-3" />
+                    {category}
+                  </span>
+                </div>
+              )}
+
+              {/* Input gõ tìm kiếm hoặc đặt tên mới */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={categoryInput}
+                  onChange={(e) => {
+                    setCategoryInput(e.target.value);
+                    setShowCategorySuggestions(true);
+                  }}
+                  onFocus={() => setShowCategorySuggestions(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && categoryInput.trim()) {
+                      e.preventDefault();
+                      setCategory(categoryInput.trim());
+                      setCategoryInput('');
+                      setShowCategorySuggestions(false);
+                    }
+                  }}
+                  placeholder="Nhập hoặc chọn chủ đề..."
+                  className="w-full px-4 py-2.5 pr-9 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm bg-white"
+                />
+                <ChevronDown
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+                />
+              </div>
+
+              {/* Dropdown gợi ý */}
+              {showCategorySuggestions && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
+                  {/* Nút tạo chủ đề mới nếu đang gõ */}
+                  {categoryInput.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCategory(categoryInput.trim());
+                        setCategoryInput('');
+                        setShowCategorySuggestions(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition border-b border-indigo-100"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Tạo chủ đề mới: &ldquo;{categoryInput.trim()}&rdquo;
+                    </button>
+                  )}
+
+                  {/* Danh sách gợi ý được lọc theo input */}
+                  <div className="max-h-52 overflow-y-auto">
+                    {SUGGESTED_CATEGORIES.filter((c) =>
+                      !categoryInput.trim() ||
+                      c.toLowerCase().includes(categoryInput.toLowerCase())
+                    ).map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          setCategory(cat);
+                          setCategoryInput('');
+                          setShowCategorySuggestions(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition flex items-center gap-2 ${category === cat ? 'font-bold text-indigo-700 bg-indigo-50/50' : 'text-slate-700'
+                          }`}
+                      >
+                        {cat}
+                        {category === cat && (
+                          <span className="ml-auto text-indigo-500 text-xs">✓ Đang chọn</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[11px] text-slate-400 mt-1">
+                💡 Gõ tên tùy ý và nhấn <kbd className="font-mono px-1 bg-slate-100 rounded">Enter</kbd> để tạo chủ đề mới
+              </p>
             </div>
 
             <div className="flex items-center gap-3 pt-6">
