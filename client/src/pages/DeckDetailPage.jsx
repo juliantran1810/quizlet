@@ -27,6 +27,7 @@ export default function DeckDetailPage() {
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [activeStrokeCardId, setActiveStrokeCardId] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -244,6 +245,24 @@ export default function DeckDetailPage() {
                       >
                         <Volume2 className="w-4 h-4" />
                       </button>
+                      {isChinese && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActiveStrokeCardId((prev) =>
+                              prev === (card._id || idx) ? null : card._id || idx
+                            )
+                          }
+                          title="Xem nét bút chữ Hán"
+                          className={`p-1 rounded-full transition ${
+                            activeStrokeCardId === (card._id || idx)
+                              ? 'bg-indigo-100 text-indigo-700'
+                              : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+                          }`}
+                        >
+                          <PenLine className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                     {/* Pinyin hiển thị ngay dưới chữ Hán */}
                     {card.pinyin && (
@@ -269,9 +288,11 @@ export default function DeckDetailPage() {
                   </div>
                 </div>
 
-                {/* HanziWriter — hiển thị inline cho chữ Hán */}
-                {isChinese && (
-                  <HanziWriter characters={card.term} />
+                {/* HanziWriter — hiển thị khi người dùng bấm vào biểu tượng bút */}
+                {isChinese && activeStrokeCardId === (card._id || idx) && (
+                  <div className="pt-2 border-t border-slate-100">
+                    <HanziWriter characters={card.term} autoAnimate />
+                  </div>
                 )}
               </div>
             );

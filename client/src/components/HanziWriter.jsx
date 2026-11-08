@@ -93,6 +93,15 @@ export default function HanziWriter({ characters, autoAnimate = false }) {
 
     return () => {
       isMounted = false;
+      writersRef.current.forEach((w) => {
+        try {
+          w.stopAnimation();
+        } catch (e) {}
+      });
+      writersRef.current = [];
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
     };
   }, [characters]);
 
@@ -172,17 +181,18 @@ export default function HanziWriter({ characters, autoAnimate = false }) {
           Không thể tải dữ liệu nét bút (cần kết nối Internet để tải thư viện Hanzi Writer).
         </p>
       ) : (
-        <div
-          ref={containerRef}
-          className="flex flex-wrap gap-4 justify-center min-h-[150px]"
-        >
-          {/* Nội dung được render động bởi HanziWriter */}
+        <div className="relative min-h-[140px] flex items-center justify-center">
           {!loaded && (
-            <div className="flex items-center gap-2 text-sm text-indigo-400 m-auto py-6">
+            <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-indigo-400 py-6">
               <Loader2 className="w-4 h-4 animate-spin" />
               Đang tải dữ liệu nét bút...
             </div>
           )}
+          {/* Vùng chứa riêng biệt cho HanziWriter - Tuyệt đối không chứa React child node */}
+          <div
+            ref={containerRef}
+            className={`flex flex-wrap gap-4 justify-center ${!loaded ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+          />
         </div>
       )}
     </div>
