@@ -7,6 +7,7 @@ import {
   LogOut,
   User as UserIcon,
   BookOpen,
+  Shield,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -52,6 +53,18 @@ export default function Navbar() {
                 <PlusCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Tạo bộ thẻ</span>
               </Link>
+
+              {/* Admin button — chỉ hiển thị cho admin */}
+              {user.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition active:scale-95"
+                  title="Admin Workbench"
+                >
+                  <Shield className="w-4 h-4" />
+                  <span className="hidden md:inline">Admin</span>
+                </Link>
+              )}
 
               <div className="h-6 w-px bg-slate-200 mx-1" />
 

@@ -13,12 +13,22 @@ import CreateEditDeckPage from './pages/CreateEditDeckPage';
 import FlashcardStudyPage from './pages/FlashcardStudyPage';
 import QuizModePage from './pages/QuizModePage';
 import MatchGamePage from './pages/MatchGamePage';
+import AdminPage from './pages/AdminPage';
 
 // Private Route Guard
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
   return user ? children : <Navigate to="/login" replace />;
+};
+
+// Admin Route Guard
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'admin') return <Navigate to="/" replace />;
+  return children;
 };
 
 function AppRoutes() {
@@ -54,6 +64,16 @@ function AppRoutes() {
           <Route path="/decks/:id/flashcards" element={<FlashcardStudyPage />} />
           <Route path="/decks/:id/quiz" element={<QuizModePage />} />
           <Route path="/decks/:id/match" element={<MatchGamePage />} />
+
+          {/* Admin */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -91,5 +91,33 @@ export const progressService = {
   },
 };
 
+// Admin Services
+export const adminService = {
+  getStats: async () => {
+    const res = await api.get('/admin/stats');
+    return res.data;
+  },
+  getUsers: async (params) => {
+    const res = await api.get('/admin/users', { params });
+    return res.data;
+  },
+  updateUserRole: async (userId, role) => {
+    const res = await api.patch(`/admin/users/${userId}/role`, { role });
+    return res.data;
+  },
+  deleteUser: async (userId) => {
+    const res = await api.delete(`/admin/users/${userId}`);
+    return res.data;
+  },
+  getDecks: async (params) => {
+    const res = await api.get('/admin/decks', { params });
+    return res.data;
+  },
+  deleteDeck: async (deckId) => {
+    const res = await api.delete(`/admin/decks/${deckId}`);
+    return res.data;
+  },
+};
+
 export default api;
 
