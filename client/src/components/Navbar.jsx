@@ -8,6 +8,7 @@ import {
   User as UserIcon,
   BookOpen,
   Shield,
+  Layers,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -47,6 +48,15 @@ export default function Navbar() {
           {user ? (
             <>
               <Link
+                to="/account"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition"
+                title="Quản lý bộ thẻ của tôi"
+              >
+                <Layers className="w-4 h-4 text-indigo-600" />
+                <span className="hidden lg:inline">Bộ thẻ của tôi</span>
+              </Link>
+
+              <Link
                 to="/create"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition active:scale-95"
               >
@@ -68,15 +78,19 @@ export default function Navbar() {
 
               <div className="h-6 w-px bg-slate-200 mx-1" />
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 pl-2">
-                  <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center text-slate-700 font-semibold text-xs">
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/account"
+                  className="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-slate-100 transition group"
+                  title="Quản lý tài khoản"
+                >
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition-transform">
                     {user.username.slice(0, 2).toUpperCase()}
                   </div>
-                  <span className="text-sm font-semibold text-slate-700 hidden md:inline">
+                  <span className="text-sm font-semibold text-slate-700 group-hover:text-indigo-600 hidden md:inline">
                     {user.username}
                   </span>
-                </div>
+                </Link>
 
                 <button
                   onClick={handleLogout}

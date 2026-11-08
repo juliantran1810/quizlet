@@ -117,3 +117,102 @@ export const getMe = async (req, res) => {
   });
 };
 
+// @desc    Cập nhật thông tin tài khoản (username, email)
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = async (req, res) => {
+  try {
+    const { username, email } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ status: 'fail', message: 'Không tìm thấy người dùng' });
+    }
+
+    if (username && username.trim()) {
+      if (username.trim() !== user.username) {
+        const existUser = await User.findOne({ username: username.trim() });
+        if (existUser) {
+          return res.status(400).json({ status: 'fail', message: 'Tên người dùng này đã có người sử dụng' });
+        }
+        user.username = username.trim();
+      }
+    }
+
+    if (email && email.trim()) {
+      const lowerEmail = email.trim().toLowerCase();
+      if (lowerEmail !== user.email) {
+        const existEmail = await User.findOne({ email: lowerEmail });
+        if (existEmail) {
+          return res.status(400).json({ status: 'fail', message: 'Email này đã có người sử dụng' });
+        }
+        user.email = lowerEmail;
+      }
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Cập nhật thông tin thành công',
+      data: {
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          createdAt: user.createdAt,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+// @desc    Đổi mật khẩu
+// @route   PUT /api/auth/change-password
+// @access  Private
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự',
+      });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return res.status(404).json({ status: 'fail', message: 'Không tìm thấy người dùng' });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Mật khẩu hiện tại không chính xác',
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Đổi mật khẩu thành công. Vui lòng ghi nhớ mật khẩu mới của bạn.',
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+

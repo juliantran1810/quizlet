@@ -14,6 +14,7 @@ import FlashcardStudyPage from './pages/FlashcardStudyPage';
 import QuizModePage from './pages/QuizModePage';
 import MatchGamePage from './pages/MatchGamePage';
 import AdminPage from './pages/AdminPage';
+import ManageAccountPage from './pages/ManageAccountPage';
 
 // Private Route Guard
 const PrivateRoute = ({ children }) => {
@@ -56,6 +57,14 @@ function AppRoutes() {
             element={
               <PrivateRoute>
                 <CreateEditDeckPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/account"
+            element={
+              <PrivateRoute>
+                <ManageAccountPage />
               </PrivateRoute>
             }
           />

@@ -49,12 +49,24 @@ export const authService = {
     const res = await api.get('/auth/me');
     return res.data;
   },
+  updateProfile: async (data) => {
+    const res = await api.put('/auth/profile', data);
+    return res.data;
+  },
+  changePassword: async (data) => {
+    const res = await api.put('/auth/change-password', data);
+    return res.data;
+  },
 };
 
 // Deck Services
 export const deckService = {
   getAll: async (params) => {
     const res = await api.get('/decks', { params });
+    return res.data;
+  },
+  getMyDecks: async (params) => {
+    const res = await api.get('/decks', { params: { ...params, myDecks: 'true' } });
     return res.data;
   },
   getById: async (id) => {
@@ -71,6 +83,10 @@ export const deckService = {
   },
   delete: async (id) => {
     const res = await api.delete(`/decks/${id}`);
+    return res.data;
+  },
+  toggleVisibility: async (id, isPublic) => {
+    const res = await api.patch(`/decks/${id}/visibility`, { isPublic });
     return res.data;
   },
   getSuggestions: async (query) => {

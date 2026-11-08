@@ -2,16 +2,47 @@ import Deck from '../models/Deck.js';
 import UserProgress from '../models/UserProgress.js';
 import { BUILTIN_VOCABULARY } from '../utils/dictionaryData.js';
 
-// @desc    Lấy danh sách các bộ thẻ (hỗ trợ lọc tìm kiếm & thể loại)
+// @desc    Lấy danh sách các bộ thẻ (hỗ trợ lọc tìm kiếm & thể loại & phân quyền riêng tư)
 // @route   GET /api/decks
-// @access  Public
+// @access  Public / Optional Auth
 export const getDecks = async (req, res) => {
   try {
-    const { search, category, author } = req.query;
-    let query = { isPublic: true };
+    const { search, category, author, myDecks, visibility } = req.query;
+    let query = {};
 
-    if (author) {
-      query = { author };
+    // 1. Phân quyền hiển thị (Visibility Access Control):
+    // Chỉ có thể xem: các bộ thẻ Public HOẶC các bộ thẻ do chính mình tạo
+    if (myDecks === 'true' || author === 'me') {
+      if (!req.user) {
+        return res.status(401).json({
+          status: 'fail',
+          message: 'Vui lòng đăng nhập để xem danh sách bộ thẻ của bạn',
+        });
+      }
+      query.author = req.user._id;
+      if (visibility === 'public') query.isPublic = true;
+      if (visibility === 'private') query.isPublic = false;
+    } else if (author) {
+      // Nếu query tác giả cụ thể:
+      const isSelf = req.user && req.user._id.toString() === author.toString();
+      if (isSelf || (req.user && req.user.role === 'admin')) {
+        query.author = author;
+        if (visibility === 'public') query.isPublic = true;
+        if (visibility === 'private') query.isPublic = false;
+      } else {
+        // Người khác xem tác giả này -> CHỈ ĐƯỢC XEM BỘ THẺ PUBLIC
+        query.author = author;
+        query.isPublic = true;
+      }
+    } else {
+      // Query danh sách chung (ví dụ ở trang chủ):
+      if (req.user) {
+        // Đã đăng nhập: Thấy tất cả bộ public + các bộ do chính mình tạo (kể cả private)
+        query.$or = [{ isPublic: true }, { author: req.user._id }];
+      } else {
+        // Khách chưa đăng nhập: CHỈ THẤY BỘ PUBLIC
+        query.isPublic = true;
+      }
     }
 
     if (category && category !== 'All') {
@@ -19,10 +50,19 @@ export const getDecks = async (req, res) => {
     }
 
     if (search) {
-      query.$or = [
+      const searchCondition = [
         { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
+      if (query.$or) {
+        query.$and = [
+          { $or: query.$or },
+          { $or: searchCondition },
+        ];
+        delete query.$or;
+      } else {
+        query.$or = searchCondition;
+      }
     }
 
     const decks = await Deck.find(query)
@@ -44,9 +84,9 @@ export const getDecks = async (req, res) => {
   }
 };
 
-// @desc    Lấy chi tiết một bộ thẻ
+// @desc    Lấy chi tiết một bộ thẻ (chặn xem nếu là Private và không phải tác giả)
 // @route   GET /api/decks/:id
-// @access  Public
+// @access  Public / Optional Auth
 export const getDeckById = async (req, res) => {
   try {
     const deck = await Deck.findById(req.params.id).populate('author', 'username email');
@@ -56,6 +96,20 @@ export const getDeckById = async (req, res) => {
         status: 'fail',
         message: 'Không tìm thấy bộ thẻ này',
       });
+    }
+
+    // Kiểm tra quyền riêng tư nếu bộ thẻ là Private:
+    if (!deck.isPublic) {
+      const isAuthor = req.user && deck.author && deck.author._id.toString() === req.user._id.toString();
+      const isAdmin = req.user && req.user.role === 'admin';
+
+      if (!isAuthor && !isAdmin) {
+        return res.status(403).json({
+          status: 'fail',
+          isPrivate: true,
+          message: 'Bộ thẻ này được đặt ở chế độ riêng tư bởi tác giả. Bạn không có quyền truy cập.',
+        });
+      }
     }
 
     res.status(200).json({
@@ -313,5 +367,47 @@ export const getTermSuggestions = async (req, res) => {
     });
   }
 };
+
+// @desc    Chuyển đổi trạng thái Công khai / Riêng tư của bộ thẻ
+// @route   PATCH /api/decks/:id/visibility
+// @access  Private (Chỉ tác giả)
+export const toggleDeckVisibility = async (req, res) => {
+  try {
+    const deck = await Deck.findById(req.params.id);
+
+    if (!deck) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Không tìm thấy bộ thẻ này',
+      });
+    }
+
+    if (deck.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: 'fail',
+        message: 'Bạn không có quyền thay đổi trạng thái của bộ thẻ này',
+      });
+    }
+
+    deck.isPublic = req.body.isPublic !== undefined ? req.body.isPublic : !deck.isPublic;
+    await deck.save();
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        isPublic: deck.isPublic,
+      },
+      message: deck.isPublic
+        ? 'Đã chuyển sang chế độ Công khai (mọi người đều có thể học)'
+        : 'Đã chuyển sang chế độ Riêng tư (chỉ bạn mới xem được)',
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+    });
+  }
+};
+
 
 

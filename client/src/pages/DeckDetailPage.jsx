@@ -16,6 +16,8 @@ import {
   CheckCircle2,
   RotateCcw,
   PenLine,
+  Lock,
+  Globe,
 } from 'lucide-react';
 
 export default function DeckDetailPage() {
@@ -28,6 +30,7 @@ export default function DeckDetailPage() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [activeStrokeCardId, setActiveStrokeCardId] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -36,6 +39,7 @@ export default function DeckDetailPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await deckService.getById(id);
       setDeck(res.data.deck);
 
@@ -49,6 +53,10 @@ export default function DeckDetailPage() {
       }
     } catch (err) {
       console.error('Lỗi khi tải chi tiết bộ thẻ:', err);
+      setError(
+        err.response?.data?.message ||
+          'Không thể tải nội dung bộ thẻ này.'
+      );
     } finally {
       setLoading(false);
     }
@@ -82,7 +90,29 @@ export default function DeckDetailPage() {
   };
 
   if (loading) return <LoadingSpinner message="Đang tải nội dung bộ thẻ..." />;
-  if (!deck) return <div className="text-center py-20">Không tìm thấy bộ thẻ</div>;
+
+  // Màn hình thông báo nếu bộ thẻ ở chế độ riêng tư hoặc không tìm thấy
+  if (error || !deck) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-24 text-center">
+        <div className="w-16 h-16 rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200 shadow-sm">
+          <Lock className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-black text-slate-800 mb-2">
+          {error?.includes('riêng tư') ? 'Bộ thẻ ở chế độ Riêng tư' : 'Không tìm thấy bộ thẻ'}
+        </h2>
+        <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+          {error || 'Bộ thẻ này không tồn tại hoặc đã bị gỡ bỏ.'}
+        </p>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-sm transition"
+        >
+          <ArrowLeft className="w-4 h-4" /> Khám phá các bộ thẻ công khai
+        </Link>
+      </div>
+    );
+  }
 
   const isAuthor = user && deck.author && deck.author._id === user._id;
   const totalCards = deck.cards?.length || 0;
@@ -127,6 +157,16 @@ export default function DeckDetailPage() {
           </span>
           <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold text-xs">
             {totalCards} thẻ thuật ngữ
+          </span>
+          <span
+            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-bold text-xs ${
+              deck.isPublic
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : 'bg-amber-50 text-amber-800 border border-amber-200'
+            }`}
+          >
+            {deck.isPublic ? <Globe className="w-3 h-3 text-emerald-600" /> : <Lock className="w-3 h-3 text-amber-600" />}
+            {deck.isPublic ? 'Công khai' : 'Riêng tư'}
           </span>
           <span className="text-xs text-slate-400">
             Tạo bởi <strong className="text-slate-600">{deck.author?.username || 'Ẩn danh'}</strong>
