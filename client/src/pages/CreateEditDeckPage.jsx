@@ -60,18 +60,44 @@ const getPinyin = async (text) => {
 // ----- Modal Bulk Import -----
 function BulkImportModal({ onClose, onImport }) {
   const [rawText, setRawText] = useState('');
-  const [termSep, setTermSep] = useState('\t');   // Dấu phân tách Term — Def
+  const [termSep, setTermSep] = useState('auto'); // Mặc định tự động nhận diện (Tab, Phẩy, Gạch, Chấm phẩy)
   const [preview, setPreview] = useState([]);
   const [generating, setGenerating] = useState(false);
+
+  // Phát hiện dấu phân cách thông minh dựa trên nội dung dán vào
+  const detectSeparator = (text) => {
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) return ',';
+    const sample = lines.slice(0, 5);
+
+    // Ưu tiên kiểm tra: Tab (Excel/Quizlet) -> Dấu phẩy -> Dấu gạch -> Dấu chấm phẩy
+    if (sample.some((l) => l.includes('\t'))) return '\t';
+    if (sample.some((l) => l.includes(','))) return ',';
+    if (sample.some((l) => l.includes(' - ') || l.includes(' – ') || l.includes(' — '))) return ' - ';
+    if (sample.some((l) => l.includes(';'))) return ';';
+    return ',';
+  };
 
   // Parse raw text thành mảng thẻ
   const parseCards = useCallback(
     (text, sep) => {
       const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-      const actual_sep = sep === '\\t' ? '\t' : sep;
+      let actual_sep = sep;
+      if (sep === 'auto') {
+        actual_sep = detectSeparator(text);
+      } else if (sep === '\\t') {
+        actual_sep = '\t';
+      }
+
       return lines
         .map((line) => {
-          const parts = line.split(actual_sep).map((p) => p.trim());
+          let parts;
+          if (actual_sep === ' - ') {
+            parts = line.split(/\s*[-–—]\s*/);
+          } else {
+            parts = line.split(actual_sep);
+          }
+          parts = parts.map((p) => p.trim());
           if (parts.length < 2) return null;
           return {
             term: parts[0] || '',
@@ -86,16 +112,47 @@ function BulkImportModal({ onClose, onImport }) {
     []
   );
 
-  // Live preview cập nhật khi thay đổi input
+  // Live preview & TỰ ĐỘNG SINH PINYIN NGAY KHI NHẬP
   useEffect(() => {
+    let isCancelled = false;
     const parsed = parseCards(rawText, termSep);
     setPreview(parsed);
+
+    // Tự động sinh Pinyin cho tất cả chữ Hán mà không cần người dùng phải bấm nút nào
+    const needsPinyin = parsed.some((c) => isHanzi(c.term) && !c.pinyin);
+    if (needsPinyin) {
+      setGenerating(true);
+      Promise.all(
+        parsed.map(async (card) => {
+          if (isHanzi(card.term) && !card.pinyin) {
+            const py = await getPinyin(card.term);
+            return { ...card, pinyin: py };
+          }
+          return card;
+        })
+      )
+        .then((withPinyin) => {
+          if (!isCancelled) {
+            setPreview(withPinyin);
+            setGenerating(false);
+          }
+        })
+        .catch(() => {
+          if (!isCancelled) setGenerating(false);
+        });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
   }, [rawText, termSep, parseCards]);
 
-  // Sinh Pinyin tự động cho tất cả thẻ có chữ Hán trong preview
-  const handleGeneratePinyin = async () => {
+  // Xác nhận nhập thẻ: đảm bảo 100% thẻ có chữ Hán đều có Pinyin
+  const handleConfirm = async () => {
+    if (preview.length === 0) return;
     setGenerating(true);
-    const updated = await Promise.all(
+
+    const completed = await Promise.all(
       preview.map(async (card) => {
         if (isHanzi(card.term) && !card.pinyin) {
           const py = await getPinyin(card.term);
@@ -104,13 +161,9 @@ function BulkImportModal({ onClose, onImport }) {
         return card;
       })
     );
-    setPreview(updated);
-    setGenerating(false);
-  };
 
-  const handleConfirm = () => {
-    if (preview.length === 0) return;
-    onImport(preview);
+    setGenerating(false);
+    onImport(completed);
     onClose();
   };
 
@@ -152,13 +205,21 @@ function BulkImportModal({ onClose, onImport }) {
 
           {/* Chọn ký tự phân tách */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Ký tự phân tách Term ↔ Định nghĩa:
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Ký tự phân tách Term ↔ Định nghĩa:
+              </label>
+              {termSep === 'auto' && (
+                <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                  ✓ Đang tự động nhận diện
+                </span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
               {[
-                { label: 'Tab (Excel / Quizlet)', value: '\t' },
+                { label: '✨ Tự động nhận diện', value: 'auto' },
                 { label: 'Dấu phẩy (,)', value: ',' },
+                { label: 'Tab (Excel / Quizlet)', value: '\t' },
                 { label: 'Dấu gạch (-)', value: ' - ' },
                 { label: 'Dấu chấm phẩy (;)', value: ';' },
               ].map((opt) => (
@@ -187,7 +248,7 @@ function BulkImportModal({ onClose, onImport }) {
               rows={8}
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
-              placeholder={`Dán danh sách từ vựng vào đây...\nVí dụ:\n爱\tYêu thương\n你好\tXin chào\n学习\tHọc tập`}
+              placeholder={`Dán danh sách từ vựng vào đây...\nVí dụ:\n爱,Yêu thương\n你好,Xin chào\n学习,Học tập`}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-mono resize-none bg-slate-50"
             />
           </div>
@@ -201,16 +262,18 @@ function BulkImportModal({ onClose, onImport }) {
                   Xem trước ({preview.length} thẻ nhận diện được):
                 </label>
 
-                {/* Nút sinh Pinyin hàng loạt */}
-                {preview.some((c) => isHanzi(c.term) && !c.pinyin) && (
-                  <button
-                    type="button"
-                    onClick={handleGeneratePinyin}
-                    disabled={generating}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 text-xs font-semibold transition disabled:opacity-50"
-                  >
-                    🈶 {generating ? 'Đang sinh...' : 'Tự động thêm Pinyin'}
-                  </button>
+                {/* Trạng thái Pinyin */}
+                {generating ? (
+                  <span className="text-xs text-indigo-600 font-semibold flex items-center gap-1.5 animate-pulse">
+                    <span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping" />
+                    ⚡ Đang tự động sinh Pinyin...
+                  </span>
+                ) : (
+                  preview.some((c) => isHanzi(c.term) && c.pinyin) && (
+                    <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Đã tự động tạo Pinyin cho toàn bộ chữ Hán
+                    </span>
+                  )
                 )}
               </div>
 
@@ -468,13 +531,23 @@ export default function CreateEditDeckPage() {
     setCards(cards.filter((_, i) => i !== index));
   };
 
-  // Thêm thẻ từ Bulk Import vào cuối danh sách
-  const handleBulkImport = (importedCards) => {
+  // Thêm thẻ từ Bulk Import vào cuối danh sách (tự động đảm bảo Pinyin)
+  const handleBulkImport = async (importedCards) => {
+    const withPinyin = await Promise.all(
+      importedCards.map(async (card) => {
+        if (isHanzi(card.term) && !card.pinyin) {
+          const py = await getPinyin(card.term);
+          return { ...card, pinyin: py };
+        }
+        return card;
+      })
+    );
+
     setCards((prev) => {
       // Lọc bỏ các thẻ trống ở cuối trước khi thêm
       const cleaned = prev.filter((c) => c.term.trim() || c.definition.trim());
       const base = cleaned.length >= 2 ? cleaned : prev;
-      return [...base, ...importedCards];
+      return [...base, ...withPinyin];
     });
   };
 
