@@ -8,6 +8,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import deckRoutes from './routes/deckRoutes.js';
 import progressRoutes from './routes/progressRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 // Load biến môi trường
 dotenv.config();
@@ -51,6 +52,7 @@ if (process.env.NODE_ENV !== 'production') {
 app.use('/api/auth', authRoutes);
 app.use('/api/decks', deckRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Route kiểm tra trạng thái máy chủ (Health Check)
 app.get('/api/health', (req, res) => {

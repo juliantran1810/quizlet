@@ -28,6 +28,11 @@ const userSchema = new mongoose.Schema(
       minlength: [6, 'Mật khẩu phải có ít nhất 6 ký tự'],
       select: false, // Ẩn mật khẩu khi query dữ liệu thông thường
     },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
   },
   {
     timestamps: true,

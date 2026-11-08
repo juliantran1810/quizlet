@@ -33,6 +33,7 @@ export const register = async (req, res) => {
       username,
       email,
       password,
+      role: 'user',
     });
 
     const token = generateToken(user._id);
@@ -45,6 +46,7 @@ export const register = async (req, res) => {
           _id: user._id,
           username: user.username,
           email: user.email,
+          role: user.role,
           createdAt: user.createdAt,
         },
       },
@@ -90,6 +92,7 @@ export const login = async (req, res) => {
           _id: user._id,
           username: user.username,
           email: user.email,
+          role: user.role,
           createdAt: user.createdAt,
         },
       },
