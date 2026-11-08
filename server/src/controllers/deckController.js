@@ -1,5 +1,6 @@
 import Deck from '../models/Deck.js';
 import UserProgress from '../models/UserProgress.js';
+import { BUILTIN_VOCABULARY } from '../utils/dictionaryData.js';
 
 // @desc    Lấy danh sách các bộ thẻ (hỗ trợ lọc tìm kiếm & thể loại)
 // @route   GET /api/decks
@@ -217,4 +218,100 @@ export const deleteDeck = async (req, res) => {
     });
   }
 };
+
+// @desc    Lấy gợi ý thuật ngữ và định nghĩa thông minh (Autocomplete / Smart Suggestions)
+// @route   GET /api/decks/suggestions
+// @access  Public
+export const getTermSuggestions = async (req, res) => {
+  try {
+    const query = (req.query.q || '').trim();
+    if (!query) {
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          suggestions: [],
+        },
+      });
+    }
+
+    const lowerQ = query.toLowerCase();
+    const suggestionsMap = new Map();
+
+    // 1. Tìm trong Built-in Vocabulary
+    for (const item of BUILTIN_VOCABULARY) {
+      const matchTerm = item.term.toLowerCase().includes(lowerQ);
+      const matchPinyin = item.pinyin && item.pinyin.toLowerCase().includes(lowerQ);
+      const matchDef = item.definitions.some((d) => d.toLowerCase().includes(lowerQ));
+
+      if (matchTerm || matchPinyin || matchDef) {
+        suggestionsMap.set(item.term.toLowerCase(), {
+          term: item.term,
+          pinyin: item.pinyin || '',
+          definitions: [...item.definitions],
+        });
+      }
+    }
+
+    // 2. Tìm trong Database MongoDB (từ các bộ thẻ công khai)
+    try {
+      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const decks = await Deck.find({
+        isPublic: true,
+        'cards.term': { $regex: escapedQuery, $options: 'i' },
+      })
+        .select('cards')
+        .limit(20);
+
+      for (const d of decks) {
+        if (!d.cards) continue;
+        for (const c of d.cards) {
+          if (c.term && c.term.toLowerCase().includes(lowerQ)) {
+            const key = c.term.toLowerCase();
+            if (suggestionsMap.has(key)) {
+              const existing = suggestionsMap.get(key);
+              if (c.definition && !existing.definitions.includes(c.definition)) {
+                existing.definitions.push(c.definition);
+              }
+              if (!existing.pinyin && c.pinyin) {
+                existing.pinyin = c.pinyin;
+              }
+            } else {
+              suggestionsMap.set(key, {
+                term: c.term,
+                pinyin: c.pinyin || '',
+                definitions: c.definition ? [c.definition] : [],
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Lỗi tìm kiếm gợi ý từ DB:', e);
+    }
+
+    // Chuyển Map thành mảng và sắp xếp ưu tiên
+    const results = Array.from(suggestionsMap.values())
+      .sort((a, b) => {
+        const aStarts = a.term.toLowerCase().startsWith(lowerQ);
+        const bStarts = b.term.toLowerCase().startsWith(lowerQ);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return a.term.length - b.term.length;
+      })
+      .slice(0, 8); // Tối đa 8 gợi ý phù hợp nhất
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        suggestions: results,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+    });
+  }
+};
+
 

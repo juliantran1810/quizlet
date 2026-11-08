@@ -298,11 +298,21 @@ export default function CreateEditDeckPage() {
   const [error, setError] = useState('');
   const [showBulkImport, setShowBulkImport] = useState(false);
 
-  // Đóng dropdown category khi click ra ngoài
+  // Trạng thái gợi ý thông minh cho Term & Definition
+  const [activeSuggestIndex, setActiveSuggestIndex] = useState(null);
+  const [termSuggestions, setTermSuggestions] = useState([]);
+  const [defSuggestionsMap, setDefSuggestionsMap] = useState({});
+  const suggestionTimeoutRef = useRef(null);
+  const cardListRef = useRef(null);
+
+  // Đóng dropdown category & suggestions khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (categoryRef.current && !categoryRef.current.contains(e.target)) {
         setShowCategorySuggestions(false);
+      }
+      if (cardListRef.current && !cardListRef.current.contains(e.target)) {
+        setActiveSuggestIndex(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -336,6 +346,90 @@ export default function CreateEditDeckPage() {
     }
   }, [id, isEditMode, user]);
 
+  // Tra cứu gợi ý thông minh khi gõ Term
+  const fetchTermSuggestions = (index, termVal) => {
+    if (suggestionTimeoutRef.current) {
+      clearTimeout(suggestionTimeoutRef.current);
+    }
+    const trimmed = termVal.trim();
+    if (!trimmed) {
+      setTermSuggestions([]);
+      setActiveSuggestIndex(null);
+      return;
+    }
+
+    suggestionTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await deckService.getSuggestions(trimmed);
+        const list = res.data?.suggestions || [];
+        setTermSuggestions(list);
+        if (list.length > 0) {
+          setActiveSuggestIndex(index);
+        } else {
+          setActiveSuggestIndex(null);
+        }
+
+        // Cập nhật sẵn gợi ý định nghĩa nếu có từ khớp
+        const match = list.find((item) => item.term.toLowerCase() === trimmed.toLowerCase()) || list[0];
+        if (match && match.definitions?.length > 0) {
+          setDefSuggestionsMap((prev) => ({
+            ...prev,
+            [index]: match.definitions,
+          }));
+        }
+      } catch (err) {
+        console.warn('Lỗi lấy gợi ý từ vựng:', err);
+      }
+    }, 250);
+  };
+
+  // Tra cứu gợi ý định nghĩa khi người dùng trỏ vào ô Definition
+  const handleFocusDefinition = async (index) => {
+    const cardTerm = cards[index]?.term?.trim();
+    if (!cardTerm) return;
+
+    if (!defSuggestionsMap[index] || defSuggestionsMap[index].length === 0) {
+      try {
+        const res = await deckService.getSuggestions(cardTerm);
+        const list = res.data?.suggestions || [];
+        const match = list.find((item) => item.term.toLowerCase() === cardTerm.toLowerCase()) || list[0];
+        if (match && match.definitions?.length > 0) {
+          setDefSuggestionsMap((prev) => ({
+            ...prev,
+            [index]: match.definitions,
+          }));
+        }
+      } catch (err) {
+        console.warn('Lỗi lấy gợi ý định nghĩa:', err);
+      }
+    }
+  };
+
+  // Khi người dùng chọn một Term gợi ý từ dropdown
+  const handleSelectTermSuggestion = (index, item) => {
+    const updated = [...cards];
+    updated[index] = {
+      ...updated[index],
+      term: item.term,
+      pinyin: item.pinyin || updated[index].pinyin,
+      definition: updated[index].definition || item.definitions[0] || '',
+    };
+    setCards(updated);
+    setDefSuggestionsMap((prev) => ({
+      ...prev,
+      [index]: item.definitions || [],
+    }));
+    setActiveSuggestIndex(null);
+    setTermSuggestions([]);
+  };
+
+  // Khi người dùng chọn một Định nghĩa gợi ý
+  const handleSelectDefSuggestion = (index, def) => {
+    const updated = [...cards];
+    updated[index] = { ...updated[index], definition: def };
+    setCards(updated);
+  };
+
   // Xử lý thay đổi từng ô input trong thẻ
   const handleCardChange = async (index, field, value) => {
     const updated = [...cards];
@@ -343,8 +437,20 @@ export default function CreateEditDeckPage() {
 
     // Tự động sinh Pinyin khi nhập chữ Hán vào ô "term" và ô pinyin đang trống
     if (field === 'term' && isHanzi(value) && !updated[index].pinyin) {
-      const py = await getPinyin(value);
-      updated[index].pinyin = py;
+      getPinyin(value).then((py) => {
+        setCards((curr) => {
+          const c = [...curr];
+          if (c[index] && !c[index].pinyin) {
+            c[index] = { ...c[index], pinyin: py };
+          }
+          return c;
+        });
+      });
+    }
+
+    // Tra cứu gợi ý thông minh khi sửa term
+    if (field === 'term') {
+      fetchTermSuggestions(index, value);
     }
 
     setCards(updated);
@@ -598,7 +704,7 @@ export default function CreateEditDeckPage() {
         </div>
 
         {/* Danh sách thẻ */}
-        <div className="space-y-4">
+        <div ref={cardListRef} className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-800">
               Danh sách thẻ ({cards.length})
@@ -639,32 +745,123 @@ export default function CreateEditDeckPage() {
 
               {/* Term + Definition */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Chữ Hán / Thuật ngữ (Term) *
-                  </label>
+                {/* CỘT THUẬT NGỮ (TERM) */}
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Chữ Hán / Thuật ngữ (Term) *
+                    </label>
+                    <span className="text-[11px] text-indigo-500 font-medium flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Gợi ý từ
+                    </span>
+                  </div>
+
                   <input
                     type="text"
                     required
                     value={card.term}
                     onChange={(e) => handleCardChange(index, 'term', e.target.value)}
+                    onFocus={() => {
+                      if (card.term?.trim()) {
+                        fetchTermSuggestions(index, card.term);
+                      }
+                    }}
                     placeholder="VD: 爱 hoặc Biodegradable"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-xl font-bold text-slate-800"
                   />
+
+                  {/* Dropdown gợi ý Term khi gõ */}
+                  {activeSuggestIndex === index && termSuggestions.length > 0 && (
+                    <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden divide-y divide-slate-100 animate-in fade-in duration-150">
+                      <div className="px-3 py-1.5 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                        <span>Gợi ý từ vựng phù hợp</span>
+                        <span className="text-[10px] font-normal text-slate-400">Click để điền nhanh</span>
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        {termSuggestions.map((item, sIdx) => (
+                          <button
+                            key={sIdx}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSelectTermSuggestion(index, item);
+                            }}
+                            className="w-full text-left px-4 py-2.5 hover:bg-indigo-50/70 transition flex items-center justify-between group"
+                          >
+                            <div className="flex items-baseline gap-2">
+                              <span className={`font-bold text-slate-800 group-hover:text-indigo-700 ${isHanzi(item.term) ? 'text-lg' : 'text-sm'}`}>
+                                {item.term}
+                              </span>
+                              {item.pinyin && (
+                                <span className="text-xs text-indigo-500 font-medium">
+                                  {item.pinyin}
+                                </span>
+                              )}
+                            </div>
+                            {item.definitions?.[0] && (
+                              <span className="text-xs text-slate-500 group-hover:text-indigo-600 truncate max-w-[50%]">
+                                {item.definitions[0]}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
+                {/* CỘT NGHĨA (DEFINITION) */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Nghĩa / Định nghĩa (Definition) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Nghĩa / Định nghĩa (Definition) *
+                    </label>
+                    {defSuggestionsMap[index]?.length > 0 && (
+                      <span className="text-[11px] text-amber-600 font-medium flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> Click gợi ý bên dưới
+                      </span>
+                    )}
+                  </div>
+
                   <input
                     type="text"
                     required
                     value={card.definition}
                     onChange={(e) => handleCardChange(index, 'definition', e.target.value)}
+                    onFocus={() => handleFocusDefinition(index)}
                     placeholder="VD: Yêu thương / Có thể phân hủy sinh học"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm text-slate-800"
                   />
+
+                  {/* Pills Gợi ý nghĩa (Quizlet Style) */}
+                  {defSuggestionsMap[index] && defSuggestionsMap[index].length > 0 && (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-amber-700 flex items-center gap-1 mr-0.5">
+                        💡 Gợi ý nghĩa:
+                      </span>
+                      {defSuggestionsMap[index].map((def, dIdx) => {
+                        const isChosen = card.definition === def;
+                        return (
+                          <button
+                            key={dIdx}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSelectDefSuggestion(index, def);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition active:scale-95 flex items-center gap-1 ${
+                              isChosen
+                                ? 'bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-xs'
+                                : 'bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100 hover:border-amber-300'
+                            }`}
+                          >
+                            <span>{def}</span>
+                            {isChosen && <span className="text-[10px] text-emerald-600 font-bold">✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 

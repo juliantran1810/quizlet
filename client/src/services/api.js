@@ -73,6 +73,10 @@ export const deckService = {
     const res = await api.delete(`/decks/${id}`);
     return res.data;
   },
+  getSuggestions: async (query) => {
+    const res = await api.get('/decks/suggestions', { params: { q: query } });
+    return res.data;
+  },
 };
 
 // Progress Services

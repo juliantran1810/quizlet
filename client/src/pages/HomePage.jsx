@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { deckService } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
@@ -16,14 +16,29 @@ import {
 const CATEGORIES = ['All', 'Tiếng Trung', 'Tiếng Anh', 'Công nghệ', 'Khoa học', 'Lịch sử', 'Y Dược', 'General'];
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const [decks, setDecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const searchBoxRef = useRef(null);
 
   useEffect(() => {
     fetchDecks();
   }, [selectedCategory]);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+        setShowSearchDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchDecks = async (searchTerm = search) => {
     try {
@@ -40,8 +55,27 @@ export default function HomePage() {
     }
   };
 
+  const handleSearchChange = (val) => {
+    setSearch(val);
+    const trimmed = val.trim().toLowerCase();
+    if (trimmed.length > 0) {
+      const matched = decks.filter(
+        (d) =>
+          d.title.toLowerCase().includes(trimmed) ||
+          (d.description && d.description.toLowerCase().includes(trimmed)) ||
+          (d.category && d.category.toLowerCase().includes(trimmed))
+      ).slice(0, 5);
+      setSearchSuggestions(matched);
+      setShowSearchDropdown(true);
+    } else {
+      setSearchSuggestions([]);
+      setShowSearchDropdown(false);
+    }
+  };
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    setShowSearchDropdown(false);
     fetchDecks(search);
   };
 
@@ -64,23 +98,68 @@ export default function HomePage() {
             Học từ vựng, ôn luyện bài thi dễ dàng qua thẻ ghi nhớ 3D, bài trắc nghiệm thông minh và game ghép từ sinh động.
           </p>
 
-          {/* Search Box */}
-          <form onSubmit={handleSearchSubmit} className="max-w-xl mx-auto flex items-center bg-white rounded-2xl p-1.5 shadow-2xl">
-            <Search className="w-5 h-5 text-slate-400 ml-3" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm bộ thẻ theo tên hoặc mô tả..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-3 py-2 text-slate-800 text-sm focus:outline-none placeholder:text-slate-400"
-            />
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition"
-            >
-              Tìm
-            </button>
-          </form>
+          {/* Search Box with Autocomplete Suggestions */}
+          <div ref={searchBoxRef} className="max-w-xl mx-auto relative">
+            <form onSubmit={handleSearchSubmit} className="flex items-center bg-white rounded-2xl p-1.5 shadow-2xl">
+              <Search className="w-5 h-5 text-slate-400 ml-3 shrink-0" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm bộ thẻ theo tên hoặc mô tả..."
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onFocus={() => {
+                  if (search.trim().length > 0) setShowSearchDropdown(true);
+                }}
+                className="w-full px-3 py-2 text-slate-800 text-sm focus:outline-none placeholder:text-slate-400"
+              />
+              <button
+                type="submit"
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition shrink-0"
+              >
+                Tìm
+              </button>
+            </form>
+
+            {/* Dropdown gợi ý tìm kiếm */}
+            {showSearchDropdown && searchSuggestions.length > 0 && (
+              <div className="absolute z-40 left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden text-left divide-y divide-slate-100 animate-in fade-in duration-150">
+                <div className="px-4 py-2 bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>Gợi ý bộ thẻ phù hợp</span>
+                  <span className="text-[10px] font-normal text-slate-400">Click để vào học ngay</span>
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {searchSuggestions.map((deck) => (
+                    <button
+                      key={deck._id}
+                      type="button"
+                      onClick={() => {
+                        setShowSearchDropdown(false);
+                        navigate(`/decks/${deck._id}`);
+                      }}
+                      className="w-full px-4 py-3 hover:bg-indigo-50/70 transition flex items-center justify-between group"
+                    >
+                      <div className="min-w-0 pr-3">
+                        <div className="font-bold text-sm text-slate-800 group-hover:text-indigo-600 truncate">
+                          {deck.title}
+                        </div>
+                        <div className="text-xs text-slate-400 line-clamp-1 mt-0.5">
+                          {deck.description || 'Không có mô tả chi tiết'}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-semibold rounded-md">
+                          {deck.category || 'General'}
+                        </span>
+                        <span className="text-xs text-slate-400 font-medium">
+                          {deck.cards?.length || 0} thẻ
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
