@@ -4,7 +4,18 @@ import { deckService, progressService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Flashcard3D from '../components/Flashcard3D';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { ArrowLeft, Shuffle, RotateCcw, CheckCircle2, Trophy, Star, Volume2, VolumeX } from 'lucide-react';
+import {
+  ArrowLeft,
+  Shuffle,
+  RotateCcw,
+  CheckCircle2,
+  Trophy,
+  Star,
+  Volume2,
+  VolumeX,
+  ArrowLeftRight,
+  Headphones,
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sfx } from '../utils/sfx';
 
@@ -20,6 +31,12 @@ export default function FlashcardStudyPage() {
   const [cardStars, setCardStars] = useState({});
   const [filterMode, setFilterMode] = useState(
     searchParams.get('mode') === 'starred' ? 'starred' : 'all'
+  );
+  const [isReversed, setIsReversed] = useState(
+    localStorage.getItem('quizlet_study_reversed') === 'true'
+  );
+  const [autoPlayAudio, setAutoPlayAudio] = useState(
+    localStorage.getItem('quizlet_autoplay_audio') === 'true'
   );
   const [isMuted, setIsMuted] = useState(sfx.isMuted());
   const [loading, setLoading] = useState(true);
@@ -130,6 +147,24 @@ export default function FlashcardStudyPage() {
     setCompleted(false);
   };
 
+  const handleToggleReversed = () => {
+    sfx.click();
+    setIsReversed((prev) => {
+      const next = !prev;
+      localStorage.setItem('quizlet_study_reversed', String(next));
+      return next;
+    });
+  };
+
+  const handleToggleAutoPlayAudio = () => {
+    sfx.click();
+    setAutoPlayAudio((prev) => {
+      const next = !prev;
+      localStorage.setItem('quizlet_autoplay_audio', String(next));
+      return next;
+    });
+  };
+
   const handleFilterChange = (mode) => {
     sfx.click();
     setFilterMode(mode);
@@ -193,13 +228,50 @@ export default function FlashcardStudyPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+            {/* Nút Đảo mặt thẻ */}
+            <button
+              onClick={handleToggleReversed}
+              title={
+                isReversed
+                  ? 'Đang đảo mặt: Đoán Thuật ngữ theo Định nghĩa (Bấm để quay về mặc định)'
+                  : 'Mặt trước là Thuật ngữ (Bấm để Đảo mặt thẻ đoán từ)'
+              }
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                isReversed
+                  ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isReversed ? 'Đảo mặt: Bật' : 'Đảo mặt'}</span>
+            </button>
+
+            {/* Nút Tự động đọc Audio */}
+            <button
+              onClick={handleToggleAutoPlayAudio}
+              title={
+                autoPlayAudio
+                  ? 'Tự động phát âm khi chuyển/lật thẻ: Đang BẬT (Bấm để Tắt)'
+                  : 'Tự động phát âm khi chuyển/lật thẻ: Đang TẮT (Bấm để Bật)'
+              }
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                autoPlayAudio
+                  ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <Headphones className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{autoPlayAudio ? 'Tự đọc: Bật' : 'Tự đọc'}</span>
+            </button>
+
+            {/* Nút Bật/Tắt hiệu ứng âm thanh SFX */}
             <button
               onClick={() => {
                 const next = sfx.toggleMute();
                 setIsMuted(next);
               }}
-              title={isMuted ? "Bật hiệu ứng âm thanh" : "Tắt hiệu ứng âm thanh"}
+              title={isMuted ? 'Bật hiệu ứng âm thanh' : 'Tắt hiệu ứng âm thanh'}
               className={`p-2 rounded-xl border transition ${
                 isMuted
                   ? 'bg-rose-50 border-rose-200 text-rose-500 hover:bg-rose-100'
@@ -327,6 +399,8 @@ export default function FlashcardStudyPage() {
             totalCards={activeCards.length}
             status={cardStatuses[currentCard?._id] || 'learning'}
             isStarred={Boolean(cardStars[currentCard?._id])}
+            isReversed={isReversed}
+            autoPlayAudio={autoPlayAudio}
             onToggleStar={handleToggleStar}
             onNext={handleNext}
             onPrev={handlePrev}
