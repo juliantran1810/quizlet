@@ -110,9 +110,9 @@ export default function Flashcard3D({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              speak(card.pinyin, 'zh-CN');
+              speak(card.term || card.pinyin, 'zh-CN');
             }}
-            title="Nghe phiên âm"
+            title="Nghe phát âm chuẩn"
             className={`p-1 rounded-full transition ${
               isReversed
                 ? 'hover:bg-white/10 text-indigo-200'

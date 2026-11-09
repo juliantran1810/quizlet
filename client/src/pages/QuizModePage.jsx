@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sfx } from '../utils/sfx';
+import { speak } from '../utils/speech';
 
 export default function QuizModePage() {
   const { id } = useParams();
@@ -124,11 +125,7 @@ export default function QuizModePage() {
   };
 
   const handleSpeak = (text) => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = /^[a-zA-Z0-9\s.,!?'"()-]+$/.test(text) ? 'en-US' : 'vi-VN';
-    window.speechSynthesis.speak(utterance);
+    speak(text);
   };
 
   if (loading) return <LoadingSpinner message="Đang tạo đề thi trắc nghiệm..." />;
