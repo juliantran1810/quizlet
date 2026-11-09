@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import HanziWriter from '../components/HanziWriter';
 import { speak } from '../utils/speech';
+import { sfx } from '../utils/sfx';
 import {
   Layers,
   BrainCircuit,
@@ -18,6 +19,7 @@ import {
   PenLine,
   Lock,
   Globe,
+  Star,
 } from 'lucide-react';
 
 export default function DeckDetailPage() {
@@ -27,6 +29,7 @@ export default function DeckDetailPage() {
 
   const [deck, setDeck] = useState(null);
   const [progress, setProgress] = useState(null);
+  const [cardStars, setCardStars] = useState({});
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [activeStrokeCardId, setActiveStrokeCardId] = useState(null);
@@ -46,7 +49,13 @@ export default function DeckDetailPage() {
       if (user) {
         try {
           const progRes = await progressService.get(id);
-          setProgress(progRes.data.progress);
+          const progData = progRes.data.progress;
+          setProgress(progData);
+          const stars = {};
+          progData?.cardStats?.forEach((c) => {
+            if (c.isStarred) stars[c.cardId] = true;
+          });
+          setCardStars(stars);
         } catch (e) {
           console.warn('Không tải được tiến độ:', e);
         }
@@ -89,6 +98,29 @@ export default function DeckDetailPage() {
     }
   };
 
+  const handleToggleStar = async (cardId) => {
+    if (!user) {
+      alert('Vui lòng đăng nhập để lưu đánh dấu thẻ gắn sao!');
+      return;
+    }
+    const newStarred = !cardStars[cardId];
+    if (newStarred) {
+      sfx.star();
+    } else {
+      sfx.unstar();
+    }
+    setCardStars((prev) => ({ ...prev, [cardId]: newStarred }));
+    try {
+      const res = await progressService.toggleStar(id, cardId, newStarred);
+      if (res.data?.progress) {
+        setProgress(res.data.progress);
+      }
+    } catch (err) {
+      console.error('Lỗi khi gắn sao:', err);
+      setCardStars((prev) => ({ ...prev, [cardId]: !newStarred }));
+    }
+  };
+
   if (loading) return <LoadingSpinner message="Đang tải nội dung bộ thẻ..." />;
 
   // Màn hình thông báo nếu bộ thẻ ở chế độ riêng tư hoặc không tìm thấy
@@ -117,6 +149,7 @@ export default function DeckDetailPage() {
   const isAuthor = user && deck.author && deck.author._id === user._id;
   const totalCards = deck.cards?.length || 0;
   const masteredCount = progress?.masteredCount || 0;
+  const starredCount = Object.values(cardStars).filter(Boolean).length;
   const progressPercent = totalCards > 0 ? Math.round((masteredCount / totalCards) * 100) : 0;
 
   return (
@@ -158,6 +191,12 @@ export default function DeckDetailPage() {
           <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold text-xs">
             {totalCards} thẻ thuật ngữ
           </span>
+          {starredCount > 0 && (
+            <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold text-xs flex items-center gap-1 border border-amber-200">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+              {starredCount} thẻ gắn sao
+            </span>
+          )}
           <span
             className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-bold text-xs ${
               deck.isPublic
@@ -256,15 +295,51 @@ export default function DeckDetailPage() {
         </Link>
       </div>
 
+      {/* Starred Cards Study Banner */}
+      {starredCount > 0 && (
+        <div className="mb-8 p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-400 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <Star className="w-5 h-5 fill-white" />
+            </div>
+            <div>
+              <h4 className="font-bold text-amber-950 text-sm">
+                Bạn có {starredCount} thẻ từ vựng đã gắn sao
+              </h4>
+              <p className="text-xs text-amber-800">
+                Lọc và tập trung ôn lại các thẻ bạn thấy khó trong chế độ Thẻ ghi nhớ.
+              </p>
+            </div>
+          </div>
+          <Link
+            to={`/decks/${id}/flashcards?mode=starred`}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap self-stretch sm:self-auto justify-center"
+          >
+            <Star className="w-3.5 h-3.5 fill-white" /> Ôn luyện {starredCount} thẻ gắn sao →
+          </Link>
+        </div>
+      )}
+
       {/* Cards List in this Deck */}
       <div className="space-y-4">
-        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          Các thẻ trong bộ này ({totalCards})
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            Các thẻ trong bộ này ({totalCards})
+          </h2>
+          {starredCount > 0 && (
+            <Link
+              to={`/decks/${id}/flashcards?mode=starred`}
+              className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+            >
+              <Star className="w-3.5 h-3.5 fill-amber-400" /> Xem {starredCount} thẻ gắn sao
+            </Link>
+          )}
+        </div>
 
         <div className="space-y-3">
           {deck.cards.map((card, idx) => {
             const isChinese = /[\u4e00-\u9fff\u3400-\u4dbf]/.test(card.term || '');
+            const isStarred = Boolean(cardStars[card._id]);
             return (
               <div
                 key={card._id || idx}
@@ -275,6 +350,18 @@ export default function DeckDetailPage() {
                   {/* Cột trái: Chữ Hán / Term + Pinyin */}
                   <div className="flex-1 border-b md:border-b-0 md:border-r border-slate-100 pb-3 md:pb-0 md:pr-6">
                     <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStar(card._id)}
+                        title={isStarred ? "Bỏ gắn sao" : "Gắn sao thẻ khó"}
+                        className={`p-1.5 rounded-full transition ${
+                          isStarred
+                            ? 'text-amber-500 bg-amber-50 hover:bg-amber-100'
+                            : 'text-slate-300 hover:text-amber-500 hover:bg-amber-50/50'
+                        }`}
+                      >
+                        <Star className={`w-4 h-4 ${isStarred ? 'fill-amber-400' : ''}`} />
+                      </button>
                       <span className={`font-bold text-slate-800 ${isChinese ? 'text-2xl' : 'text-base'}`}>
                         {card.term}
                       </span>

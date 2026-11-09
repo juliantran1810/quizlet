@@ -9,8 +9,11 @@ import {
   RotateCcw,
   Sparkles,
   Zap,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { sfx } from '../utils/sfx';
 
 export default function MatchGamePage() {
   const { id } = useParams();
@@ -19,6 +22,7 @@ export default function MatchGamePage() {
   const [selectedTile, setSelectedTile] = useState(null);
   const [matchedIds, setMatchedIds] = useState(new Set());
   const [wrongPair, setWrongPair] = useState([]);
+  const [isMuted, setIsMuted] = useState(sfx.isMuted());
   const [loading, setLoading] = useState(true);
 
   // Realtime Timer state
@@ -26,6 +30,10 @@ export default function MatchGamePage() {
   const [isRunning, setIsRunning] = useState(false);
   const [gameCompleted, setGameCompleted] = useState(false);
   const timerRef = useRef(null);
+
+  useEffect(() => {
+    return sfx.onMuteChange(setIsMuted);
+  }, []);
 
   useEffect(() => {
     loadDeckAndSetupGame();
@@ -99,11 +107,13 @@ export default function MatchGamePage() {
 
     // Nếu bấm lại chính thẻ đang chọn thì bỏ chọn
     if (selectedTile && selectedTile.id === tile.id) {
+      sfx.click();
       setSelectedTile(null);
       return;
     }
 
     if (!selectedTile) {
+      sfx.click();
       setSelectedTile(tile);
     } else {
       // So sánh cặp: cùng cardId và khác type (1 term + 1 def)
@@ -112,6 +122,7 @@ export default function MatchGamePage() {
         selectedTile.type !== tile.type
       ) {
         // GHÉP ĐÚNG!
+        sfx.match();
         const newMatched = new Set(matchedIds);
         newMatched.add(selectedTile.id);
         newMatched.add(tile.id);
@@ -122,10 +133,12 @@ export default function MatchGamePage() {
         if (newMatched.size === tiles.length) {
           setIsRunning(false);
           setGameCompleted(true);
+          sfx.fanfare();
           confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
         }
       } else {
         // GHÉP SAI!
+        sfx.wrong();
         setWrongPair([selectedTile.id, tile.id]);
         setTimeout(() => {
           setWrongPair([]);
@@ -160,13 +173,32 @@ export default function MatchGamePage() {
             <span>{formattedTime}s</span>
           </div>
 
-          <button
-            onClick={() => setupGameTiles(deck.cards)}
-            title="Chơi ván mới"
-            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const next = sfx.toggleMute();
+                setIsMuted(next);
+              }}
+              title={isMuted ? "Bật hiệu ứng âm thanh" : "Tắt hiệu ứng âm thanh"}
+              className={`p-2 rounded-xl border transition ${
+                isMuted
+                  ? 'bg-rose-50 border-rose-200 text-rose-500 hover:bg-rose-100'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => {
+                sfx.slide();
+                setupGameTiles(deck.cards);
+              }}
+              title="Chơi ván mới"
+              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="text-center mb-6">

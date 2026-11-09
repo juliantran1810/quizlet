@@ -109,6 +109,10 @@ export const progressService = {
     const res = await api.delete(`/progress/${deckId}`);
     return res.data;
   },
+  toggleStar: async (deckId, cardId, isStarred) => {
+    const res = await api.patch(`/progress/${deckId}/cards/${cardId}/star`, { isStarred });
+    return res.data;
+  },
 };
 
 // Admin Services

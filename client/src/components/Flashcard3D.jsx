@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Volume2, Sparkles, CheckCircle2, RotateCcw, Lightbulb, PenLine } from 'lucide-react';
+import { Volume2, Sparkles, CheckCircle2, RotateCcw, Lightbulb, PenLine, Star } from 'lucide-react';
 import { speak, detectLang } from '../utils/speech';
+import { sfx } from '../utils/sfx';
 import HanziWriter from './HanziWriter';
 
 export default function Flashcard3D({
@@ -9,6 +10,8 @@ export default function Flashcard3D({
   currentIndex,
   totalCards,
   status = 'learning',
+  isStarred = false,
+  onToggleStar,
   onNext,
   onPrev,
   onMarkStatus,
@@ -26,17 +29,34 @@ export default function Flashcard3D({
     setShowStroke(false);
   }, [currentIndex, card]);
 
+  const handleFlip = () => {
+    sfx.flip();
+    setIsFlipped((prev) => !prev);
+  };
+
+  const handleStarClick = (e) => {
+    e.stopPropagation();
+    if (isStarred) {
+      sfx.unstar();
+    } else {
+      sfx.star();
+    }
+    onToggleStar && onToggleStar(card._id);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
       if (e.code === 'Space') {
         e.preventDefault();
-        setIsFlipped((prev) => !prev);
+        handleFlip();
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
+        sfx.slide();
         onNext && onNext();
       } else if (e.code === 'ArrowLeft') {
         e.preventDefault();
+        sfx.slide();
         onPrev && onPrev();
       }
     };
@@ -51,7 +71,7 @@ export default function Flashcard3D({
       {/* 3D Card */}
       <div
         className="w-full h-80 sm:h-96 cursor-pointer perspective-1000"
-        onClick={() => setIsFlipped((prev) => !prev)}
+        onClick={handleFlip}
       >
         <motion.div
           className="relative w-full h-full transform-style-preserve-3d shadow-xl rounded-3xl"
@@ -92,6 +112,20 @@ export default function Flashcard3D({
                 >
                   <Volume2 className="w-5 h-5" />
                 </button>
+                {onToggleStar && (
+                  <button
+                    type="button"
+                    onClick={handleStarClick}
+                    title={isStarred ? "Bỏ gắn sao" : "Gắn sao thẻ khó"}
+                    className={`p-2 rounded-full transition ${
+                      isStarred
+                        ? 'text-amber-500 bg-amber-50 hover:bg-amber-100'
+                        : 'text-slate-300 hover:text-amber-500 hover:bg-amber-50/50'
+                    }`}
+                  >
+                    <Star className={`w-4 h-4 ${isStarred ? 'fill-amber-400' : ''}`} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -139,13 +173,29 @@ export default function Flashcard3D({
               <span className="px-3 py-1 bg-white/10 backdrop-blur-sm text-indigo-200 font-semibold rounded-full">
                 {isChinese ? '中文意思 Nghĩa tiếng Việt' : 'Định nghĩa (Definition)'}
               </span>
-              <button
-                onClick={(e) => { e.stopPropagation(); speak(card.definition); }}
-                title="Phát âm định nghĩa"
-                className="p-2 rounded-full hover:bg-white/10 text-indigo-200 transition"
-              >
-                <Volume2 className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={(e) => { e.stopPropagation(); speak(card.definition); }}
+                  title="Phát âm định nghĩa"
+                  className="p-2 rounded-full hover:bg-white/10 text-indigo-200 transition"
+                >
+                  <Volume2 className="w-5 h-5" />
+                </button>
+                {onToggleStar && (
+                  <button
+                    type="button"
+                    onClick={handleStarClick}
+                    title={isStarred ? "Bỏ gắn sao" : "Gắn sao thẻ khó"}
+                    className={`p-2 rounded-full transition ${
+                      isStarred
+                        ? 'text-amber-400 bg-white/20'
+                        : 'text-white/40 hover:text-amber-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <Star className={`w-4 h-4 ${isStarred ? 'fill-amber-400' : ''}`} />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-col items-center justify-center text-center my-auto px-4 overflow-y-auto max-h-[220px] gap-3">
@@ -183,7 +233,10 @@ export default function Flashcard3D({
       <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <button
-            onClick={() => onMarkStatus(card._id, 'learning')}
+            onClick={() => {
+              sfx.retry();
+              onMarkStatus(card._id, 'learning');
+            }}
             className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border transition shadow-sm ${status === 'learning'
               ? 'bg-amber-500 text-white border-amber-600 shadow-amber-200'
               : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400 hover:text-amber-600'
@@ -194,7 +247,10 @@ export default function Flashcard3D({
           </button>
 
           <button
-            onClick={() => onMarkStatus(card._id, 'mastered')}
+            onClick={() => {
+              sfx.mastered();
+              onMarkStatus(card._id, 'mastered');
+            }}
             className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border transition shadow-sm ${status === 'mastered'
               ? 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-200'
               : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400 hover:text-emerald-600'
@@ -207,7 +263,10 @@ export default function Flashcard3D({
 
         <div className="flex items-center gap-3">
           <button
-            onClick={onPrev}
+            onClick={() => {
+              sfx.slide();
+              onPrev && onPrev();
+            }}
             disabled={currentIndex === 0}
             className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
@@ -217,7 +276,10 @@ export default function Flashcard3D({
             {currentIndex + 1} / {totalCards}
           </span>
           <button
-            onClick={onNext}
+            onClick={() => {
+              sfx.slide();
+              onNext && onNext();
+            }}
             disabled={currentIndex === totalCards - 1}
             className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
           >

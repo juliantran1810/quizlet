@@ -9,9 +9,11 @@ import {
   Trophy,
   RotateCcw,
   Volume2,
+  VolumeX,
   Sparkles,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { sfx } from '../utils/sfx';
 
 export default function QuizModePage() {
   const { id } = useParams();
@@ -23,7 +25,12 @@ export default function QuizModePage() {
   const [score, setScore] = useState(0);
   const [wrongAnswers, setWrongAnswers] = useState([]);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [isMuted, setIsMuted] = useState(sfx.isMuted());
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    return sfx.onMuteChange(setIsMuted);
+  }, []);
 
   useEffect(() => {
     loadDeckAndGenerateQuiz();
@@ -88,8 +95,10 @@ export default function QuizModePage() {
 
     const currentQ = questions[currentQIndex];
     if (choice === currentQ.correctAnswer) {
+      sfx.correct();
       setScore((prev) => prev + 1);
     } else {
+      sfx.wrong();
       setWrongAnswers((prev) => [
         ...prev,
         {
@@ -103,11 +112,13 @@ export default function QuizModePage() {
 
   const handleNextQuestion = () => {
     if (currentQIndex < questions.length - 1) {
+      sfx.slide();
       setCurrentQIndex((prev) => prev + 1);
       setSelectedOption(null);
       setIsAnswered(false);
     } else {
       setQuizFinished(true);
+      sfx.fanfare();
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
     }
   };
@@ -143,9 +154,25 @@ export default function QuizModePage() {
           >
             <ArrowLeft className="w-4 h-4" /> Thoát Quiz
           </Link>
-          <span className="text-xs font-bold px-3 py-1 bg-purple-50 text-purple-700 rounded-full">
-            Chế độ Trắc nghiệm (Quiz Mode)
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                const next = sfx.toggleMute();
+                setIsMuted(next);
+              }}
+              title={isMuted ? "Bật hiệu ứng âm thanh" : "Tắt hiệu ứng âm thanh"}
+              className={`p-1.5 rounded-xl border transition ${
+                isMuted
+                  ? 'bg-rose-50 border-rose-200 text-rose-500 hover:bg-rose-100'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
+            <span className="text-xs font-bold px-3 py-1 bg-purple-50 text-purple-700 rounded-full">
+              Chế độ Trắc nghiệm (Quiz Mode)
+            </span>
+          </div>
         </div>
 
         {/* Progress Bar */}
