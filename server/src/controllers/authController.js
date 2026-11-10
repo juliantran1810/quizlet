@@ -47,6 +47,7 @@ export const register = async (req, res) => {
           username: user.username,
           email: user.email,
           role: user.role,
+          avatar: user.avatar || '',
           streakCount: user.streakCount || 0,
           longestStreak: user.longestStreak || 0,
           lastActiveDate: user.lastActiveDate || null,
@@ -96,6 +97,7 @@ export const login = async (req, res) => {
           username: user.username,
           email: user.email,
           role: user.role,
+          avatar: user.avatar || '',
           streakCount: user.streakCount || 0,
           longestStreak: user.longestStreak || 0,
           lastActiveDate: user.lastActiveDate || null,
@@ -128,11 +130,15 @@ export const getMe = async (req, res) => {
 // @access  Private
 export const updateProfile = async (req, res) => {
   try {
-    const { username, email } = req.body;
+    const { username, email, avatar } = req.body;
     const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ status: 'fail', message: 'Không tìm thấy người dùng' });
+    }
+
+    if (avatar !== undefined) {
+      user.avatar = avatar;
     }
 
     if (username && username.trim()) {
@@ -167,6 +173,10 @@ export const updateProfile = async (req, res) => {
           username: user.username,
           email: user.email,
           role: user.role,
+          avatar: user.avatar || '',
+          streakCount: user.streakCount || 0,
+          longestStreak: user.longestStreak || 0,
+          lastActiveDate: user.lastActiveDate || null,
           createdAt: user.createdAt,
         },
       },

@@ -105,8 +105,12 @@ export default function Navbar() {
                   className="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-slate-100 transition group"
                   title="Quản lý tài khoản"
                 >
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition-transform">
-                    {user.username.slice(0, 2).toUpperCase()}
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition-transform overflow-hidden">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                    ) : (
+                      user.username.slice(0, 2).toUpperCase()
+                    )}
                   </div>
                   <span className="text-sm font-semibold text-slate-700 group-hover:text-indigo-600 hidden md:inline">
                     {user.username}

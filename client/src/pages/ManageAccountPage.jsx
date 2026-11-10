@@ -24,6 +24,9 @@ import {
   Gamepad2,
   RotateCcw,
   Flame,
+  Camera,
+  Upload,
+  Sparkles,
 } from 'lucide-react';
 
 export default function ManageAccountPage() {
@@ -39,6 +42,7 @@ export default function ManageAccountPage() {
   // Form states cho Settings
   const [username, setUsername] = useState(user?.username || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [avatar, setAvatar] = useState(user?.avatar || '');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState({ type: '', text: '' });
 
@@ -50,10 +54,78 @@ export default function ManageAccountPage() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState({ type: '', text: '' });
 
+  // Preset Avatars đẹp mắt phong cách học sinh, sinh viên, tri thức
+  const PRESET_AVATARS = [
+    'https://api.dicebear.com/7.x/bottts/svg?seed=Felix',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=Aneka',
+    'https://api.dicebear.com/7.x/adventurer/svg?seed=Whiskers',
+    'https://api.dicebear.com/7.x/adventurer/svg?seed=Pepper',
+    'https://api.dicebear.com/7.x/notionists/svg?seed=Oliver',
+    'https://api.dicebear.com/7.x/notionists/svg?seed=Milo',
+    'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Spark',
+    'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Star',
+  ];
+
+  // Tự động resize và nén ảnh thông minh bằng HTML5 Canvas
+  const compressImage = (file, maxWidth = 300, maxHeight = 300, quality = 0.85) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Cắt crop vuông trung tâm (Center Crop) để avatar tròn luôn đẹp chuẩn tỷ lệ 1:1
+          const minDim = Math.min(width, height);
+          const startX = (width - minDim) / 2;
+          const startY = (height - minDim) / 2;
+
+          canvas.width = maxWidth;
+          canvas.height = maxHeight;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, maxWidth, maxHeight);
+
+          // Xuất Data URL dạng jpeg đã nén nhẹ (~40KB - 80KB)
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedDataUrl);
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
+  // Xử lý upload ảnh từ thiết bị (chấp nhận mọi dung lượng ảnh gốc, tự động nén tối ưu)
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setProfileMsg({ type: 'error', text: 'Vui lòng chọn tệp định dạng hình ảnh (PNG, JPG, WEBP)' });
+      return;
+    }
+
+    try {
+      setProfileMsg({ type: '', text: '' });
+      // Tự động nén và resize về 300x300px tỷ lệ 1:1 siêu nét
+      const compressedAvatar = await compressImage(file, 300, 300, 0.85);
+      setAvatar(compressedAvatar);
+    } catch (err) {
+      console.error('Lỗi khi nén ảnh:', err);
+      setProfileMsg({ type: 'error', text: 'Không thể xử lý tệp ảnh này, vui lòng thử ảnh khác.' });
+    }
+  };
+
   useEffect(() => {
     if (user) {
       setUsername(user.username);
       setEmail(user.email);
+      setAvatar(user.avatar || '');
       loadMyDecks();
     }
   }, [user]);
@@ -103,7 +175,7 @@ export default function ManageAccountPage() {
     }
     setProfileSaving(true);
     try {
-      const res = await authService.updateProfile({ username, email });
+      const res = await authService.updateProfile({ username, email, avatar });
       updateUser(res.data.user);
       setProfileMsg({ type: 'success', text: 'Cập nhật thông tin tài khoản thành công!' });
     } catch (err) {
@@ -181,8 +253,12 @@ export default function ManageAccountPage() {
         <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold text-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
-                {user?.username?.slice(0, 2).toUpperCase() || 'U'}
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold text-2xl flex items-center justify-center shadow-lg shadow-indigo-100 overflow-hidden">
+                {user?.avatar ? (
+                  <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                ) : (
+                  user?.username?.slice(0, 2).toUpperCase() || 'U'
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -478,7 +554,72 @@ export default function ManageAccountPage() {
                 </div>
               )}
 
-              <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <form onSubmit={handleUpdateProfile} className="space-y-6">
+                {/* Khu vực chọn Avatar */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Ảnh đại diện (Avatar)
+                  </label>
+                  
+                  <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
+                    {/* Preview avatar hiện tại */}
+                    <div className="relative group shrink-0">
+                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-black text-2xl flex items-center justify-center shadow-md overflow-hidden border-2 border-white">
+                        {avatar ? (
+                          <img src={avatar} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          username?.slice(0, 2).toUpperCase() || 'U'
+                        )}
+                      </div>
+                      <label
+                        htmlFor="avatar-file-input"
+                        className="absolute -bottom-1 -right-1 p-1.5 rounded-xl bg-indigo-600 text-white shadow-md hover:bg-indigo-700 cursor-pointer transition"
+                        title="Tải ảnh từ máy tính"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <input
+                          id="avatar-file-input"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {/* Bộ sưu tập Avatar hoạt hình độc đáo */}
+                    <div className="flex-1">
+                      <span className="text-xs font-bold text-slate-500 block mb-2">
+                        Hoặc chọn một hình mẫu sinh động:
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {PRESET_AVATARS.map((url, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setAvatar(url)}
+                            className={`w-9 h-9 rounded-xl overflow-hidden border-2 p-0.5 transition-all ${
+                              avatar === url
+                                ? 'border-indigo-600 scale-110 shadow-sm ring-2 ring-indigo-200'
+                                : 'border-slate-200 hover:border-slate-400 bg-white'
+                            }`}
+                          >
+                            <img src={url} alt={`Preset ${idx}`} className="w-full h-full object-cover rounded-lg" />
+                          </button>
+                        ))}
+                        {avatar && (
+                          <button
+                            type="button"
+                            onClick={() => setAvatar('')}
+                            className="px-2 py-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700 underline self-center"
+                          >
+                            Xóa ảnh
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                     Tên người dùng (Username)

@@ -33,6 +33,11 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    // Ảnh đại diện (URL hoặc data URI hoặc tên preset avatar)
+    avatar: {
+      type: String,
+      default: '',
+    },
     // Daily Streak Thống kê học tập
     streakCount: {
       type: Number,
