@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -126,6 +126,8 @@ export default function Navbar() {
                 </button>
               </div>
             </>
+          ) : loading ? (
+            <div className="w-24 h-8 bg-slate-100 rounded-xl animate-pulse" />
           ) : (
             <div className="flex items-center gap-2">
               <Link

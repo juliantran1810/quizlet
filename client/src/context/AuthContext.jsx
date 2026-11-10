@@ -4,7 +4,14 @@ import { authService } from '../services/api';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('quizlet_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      return null;
+    }
+  });
   const [token, setToken] = useState(localStorage.getItem('quizlet_token') || null);
   const [loading, setLoading] = useState(true);
 
@@ -14,7 +21,9 @@ export const AuthProvider = ({ children }) => {
       if (savedToken) {
         try {
           const res = await authService.getMe();
-          setUser(res.data.user);
+          const freshUser = res.data.user;
+          setUser(freshUser);
+          localStorage.setItem('quizlet_user', JSON.stringify(freshUser));
         } catch (err) {
           console.error('Lỗi lấy thông tin user:', err);
           logout();
