@@ -7,6 +7,7 @@ import {
   updateUserRole,
   deleteUser,
   getAllDecks,
+  adminToggleDeckVisibility,
   adminDeleteDeck,
 } from '../controllers/adminController.js';
 
@@ -22,6 +23,7 @@ router.patch('/users/:id/role', updateUserRole);
 router.delete('/users/:id', deleteUser);
 
 router.get('/decks', getAllDecks);
+router.patch('/decks/:id/visibility', adminToggleDeckVisibility);
 router.delete('/decks/:id', adminDeleteDeck);
 
 export default router;

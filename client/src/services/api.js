@@ -137,6 +137,10 @@ export const adminService = {
     const res = await api.get('/admin/decks', { params });
     return res.data;
   },
+  toggleDeckVisibility: async (deckId, isPublic) => {
+    const res = await api.patch(`/admin/decks/${deckId}/visibility`, { isPublic });
+    return res.data;
+  },
   deleteDeck: async (deckId) => {
     const res = await api.delete(`/admin/decks/${deckId}`);
     return res.data;
