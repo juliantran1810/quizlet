@@ -22,7 +22,7 @@ import { sfx } from '../utils/sfx';
 export default function FlashcardStudyPage() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const [deck, setDeck] = useState(null);
   const [cards, setCards] = useState([]);
@@ -105,7 +105,10 @@ export default function FlashcardStudyPage() {
     // Gửi cập nhật lên backend nếu đã đăng nhập
     if (user) {
       try {
-        await progressService.update(id, { cardId, status });
+        const res = await progressService.update(id, { cardId, status });
+        if (res.data?.userStreak) {
+          updateUser(res.data.userStreak);
+        }
       } catch (err) {
         console.error('Lỗi lưu tiến độ:', err);
       }

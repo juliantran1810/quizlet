@@ -25,7 +25,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 export default function LearnModePage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const [deck, setDeck] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -156,9 +156,16 @@ export default function LearnModePage() {
         speakTerm(currentCard.term);
       }
 
-      // Cập nhật tiến độ lên Server (Spaced Repetition Leitner Box)
+      // Cập nhật tiến độ lên Server (Spaced Repetition Leitner Box & Daily Streak)
       if (user && currentCard._id) {
-        progressService.update(id, { cardId: currentCard._id, status: 'mastered' }).catch(() => {});
+        progressService
+          .update(id, { cardId: currentCard._id, status: 'mastered' })
+          .then((res) => {
+            if (res.data?.userStreak) {
+              updateUser(res.data.userStreak);
+            }
+          })
+          .catch(() => {});
       }
 
       setSessionResults((prev) => ({

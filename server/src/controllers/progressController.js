@@ -1,5 +1,6 @@
 import UserProgress from '../models/UserProgress.js';
 import Deck from '../models/Deck.js';
+import User from '../models/User.js';
 
 // @desc    Lấy tiến độ học của người dùng cho một bộ thẻ
 // @route   GET /api/progress/:deckId
@@ -139,10 +140,55 @@ export const updateProgress = async (req, res) => {
 
     await progress.save();
 
+    // Cập nhật Daily Streak cho User
+    let updatedUserStreak = null;
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const user = await User.findById(req.user._id);
+
+      if (user) {
+        if (!user.lastActiveDate) {
+          // Lần đầu học
+          user.streakCount = 1;
+          user.longestStreak = 1;
+          user.lastActiveDate = todayStr;
+          await user.save();
+        } else if (user.lastActiveDate !== todayStr) {
+          // Tính khoảng cách ngày so với ngày học trước
+          const prevDate = new Date(user.lastActiveDate);
+          const currentDate = new Date(todayStr);
+          const diffTime = Math.abs(currentDate - prevDate);
+          const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays === 1) {
+            // Học liên tiếp ngày hôm sau -> Tăng Streak
+            user.streakCount = (user.streakCount || 0) + 1;
+          } else if (diffDays > 1) {
+            // Đã ngắt quãng quá 1 ngày -> Bắt đầu chuỗi mới
+            user.streakCount = 1;
+          }
+
+          if (user.streakCount > (user.longestStreak || 0)) {
+            user.longestStreak = user.streakCount;
+          }
+          user.lastActiveDate = todayStr;
+          await user.save();
+        }
+        updatedUserStreak = {
+          streakCount: user.streakCount,
+          longestStreak: user.longestStreak,
+          lastActiveDate: user.lastActiveDate,
+        };
+      }
+    } catch (streakErr) {
+      console.warn('Lỗi cập nhật streak:', streakErr);
+    }
+
     res.status(200).json({
       status: 'success',
       data: {
         progress,
+        userStreak: updatedUserStreak,
       },
     });
   } catch (error) {

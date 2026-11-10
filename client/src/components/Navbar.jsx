@@ -9,6 +9,7 @@ import {
   BookOpen,
   Shield,
   Layers,
+  Flame,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -79,6 +80,26 @@ export default function Navbar() {
               <div className="h-6 w-px bg-slate-200 mx-1" />
 
               <div className="flex items-center gap-2">
+                {/* Daily Streak Flame Badge */}
+                <Link
+                  to="/account"
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-black transition border shadow-xs ${
+                    (user.streakCount || 0) > 0
+                      ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-orange-200 text-orange-600 hover:scale-105'
+                      : 'bg-slate-50 border-slate-200 text-slate-400'
+                  }`}
+                  title={`Chuỗi học tập liên tục: ${user.streakCount || 0} ngày`}
+                >
+                  <Flame
+                    className={`w-4 h-4 ${
+                      (user.streakCount || 0) > 0
+                        ? 'fill-orange-500 text-orange-600 animate-pulse'
+                        : 'text-slate-400'
+                    }`}
+                  />
+                  <span>{user.streakCount || 0}</span>
+                </Link>
+
                 <Link
                   to="/account"
                   className="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-slate-100 transition group"

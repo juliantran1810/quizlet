@@ -33,6 +33,21 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    // Daily Streak Thống kê học tập
+    streakCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    lastActiveDate: {
+      type: String, // Định dạng 'YYYY-MM-DD' theo giờ địa phương
+      default: null,
+    },
+    longestStreak: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,

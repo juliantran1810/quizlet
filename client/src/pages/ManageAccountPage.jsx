@@ -23,6 +23,7 @@ import {
   BrainCircuit,
   Gamepad2,
   RotateCcw,
+  Flame,
 } from 'lucide-react';
 
 export default function ManageAccountPage() {
@@ -205,6 +206,15 @@ export default function ManageAccountPage() {
 
             {/* Quick Stats Badges */}
             <div className="flex flex-wrap items-center gap-3">
+              {/* Daily Streak Badge */}
+              <div className="px-4 py-3 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100 border border-orange-200 text-center min-w-[100px] shadow-xs">
+                <div className="text-xl font-black text-orange-600 flex items-center justify-center gap-1">
+                  <Flame className="w-5 h-5 fill-orange-500 text-orange-600 animate-pulse" />
+                  <span>{user?.streakCount || 0}</span>
+                </div>
+                <div className="text-[11px] font-bold text-orange-700">Ngày Streak 🔥</div>
+              </div>
+
               <div className="px-4 py-3 rounded-2xl bg-indigo-50 border border-indigo-100 text-center min-w-[90px]">
                 <div className="text-xl font-black text-indigo-700">{decks.length}</div>
                 <div className="text-[11px] font-semibold text-indigo-600">Bộ thẻ</div>
