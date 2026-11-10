@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import LoadingSpinner from './components/LoadingSpinner';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -20,14 +21,14 @@ import LearnModePage from './pages/LearnModePage';
 // Private Route Guard
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <LoadingSpinner message="Đang xác thực phiên học..." />;
   return user ? children : <Navigate to="/login" replace />;
 };
 
 // Admin Route Guard
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <LoadingSpinner message="Đang kiểm tra quyền quản trị..." />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'admin') return <Navigate to="/" replace />;
   return children;

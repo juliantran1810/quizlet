@@ -13,7 +13,12 @@ export const AuthProvider = ({ children }) => {
     }
   });
   const [token, setToken] = useState(localStorage.getItem('quizlet_token') || null);
-  const [loading, setLoading] = useState(true);
+  // Nếu đã có token và đã có user từ localStorage, hoặc hoàn toàn không có token -> không cần khóa màn hình (loading = false)
+  const [loading, setLoading] = useState(() => {
+    const savedToken = localStorage.getItem('quizlet_token');
+    const savedUser = localStorage.getItem('quizlet_user');
+    return Boolean(savedToken && !savedUser);
+  });
 
   useEffect(() => {
     const fetchUser = async () => {
