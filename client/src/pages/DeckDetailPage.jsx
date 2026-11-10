@@ -215,7 +215,7 @@ export default function DeckDetailPage() {
           </span>
         </div>
 
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
           {deck.title}
         </h1>
         {deck.description && (
@@ -227,9 +227,9 @@ export default function DeckDetailPage() {
         {/* Progress Bar (if logged in) */}
         {user && (
           <div className="mt-6 pt-6 border-t border-slate-100">
-            <div className="flex items-center justify-between text-xs font-semibold mb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold mb-2">
               <span className="text-slate-600">Tiến độ ghi nhớ: {progressPercent}%</span>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <span className="text-emerald-600 flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" /> {masteredCount} Đã thuộc
                 </span>

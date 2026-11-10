@@ -603,22 +603,24 @@ export default function CreateEditDeckPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <Link
-          to={isEditMode ? `/decks/${id}` : '/'}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> Quay lại
-        </Link>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+        <div className="flex items-center justify-between sm:justify-start gap-4">
+          <Link
+            to={isEditMode ? `/decks/${id}` : '/'}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4" /> Quay lại
+          </Link>
 
-        <h1 className="text-2xl font-extrabold text-slate-800">
-          {isEditMode ? 'Chỉnh sửa bộ thẻ' : 'Tạo bộ thẻ mới'}
-        </h1>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800">
+            {isEditMode ? 'Chỉnh sửa bộ thẻ' : 'Tạo bộ thẻ mới'}
+          </h1>
+        </div>
 
         <button
           onClick={handleSubmit}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 shadow-sm transition disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 shadow-sm transition disabled:opacity-50 w-full sm:w-auto"
         >
           <Save className="w-4 h-4" />
           {saving ? 'Đang lưu...' : isEditMode ? 'Cập nhật' : 'Tạo bộ thẻ'}
@@ -778,12 +780,12 @@ export default function CreateEditDeckPage() {
 
         {/* Danh sách thẻ */}
         <div ref={cardListRef} className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-slate-800">
               Danh sách thẻ ({cards.length})
             </h2>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Tối thiểu 2 thẻ hợp lệ</span>
+              <span className="text-xs text-slate-500 hidden sm:inline">Tối thiểu 2 thẻ hợp lệ</span>
               {/* Nút mở Bulk Import */}
               <button
                 type="button"

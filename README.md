@@ -1,21 +1,26 @@
-# 📚 Quizlet Clone - MERN Stack
+# 📚 Memora - Nền Tảng Học Flashcard Thông Minh (Web & Mobile)
 
-Nền tảng học tập thông minh mô phỏng Quizlet với đầy đủ các chế độ Flashcard 3D, Trắc nghiệm (Quiz Mode), và Mini Game Ghép từ (Match Game).
+Hệ sinh thái học tập đa nền tảng (Web + Mobile App) với đầy đủ chế độ Flashcard 3D, Trắc nghiệm (Quiz Mode), Game Ghép từ (Match Game), Học Gõ Từ (Learn Mode), Thuật toán Lặp lại ngắt quãng (Leitner 5 Box) và Chuỗi ngày học liên tục (Daily Streak 🔥).
 
 ---
 
 ## 🛠 1. Công nghệ Sử dụng (Tech Stack)
 
-- **Frontend:**
+- **Mobile App (React Native / Expo):**
+  - Expo SDK (Chạy trên iOS & Android qua Expo Go)
+  - React Navigation (Native Stack)
+  - AsyncStorage (Lưu trữ JWT & phiên đăng nhập)
+  - Expo Speech (Phát âm giọng bản xứ Tiếng Trung zh-CN & Tiếng Anh en-US)
+  - Axios (Kết nối đồng bộ với Backend)
+- **Web Client:**
   - React 18 (Vite)
-  - Tailwind CSS (Giao diện hiện đại)
+  - Tailwind CSS (Giao diện chuẩn Memora)
   - Framer Motion (Hiệu ứng 3D xoay lật thẻ)
-  - Lucide React (Bộ icon tối giản)
-  - Web Speech API (Tính năng đọc phát âm Audio bằng giọng chuẩn máy)
-  - Canvas Confetti (Hiệu ứng ăn mừng khi hoàn thành bài học)
+  - Lucide React & Canvas Confetti
+  - Web Speech API
 - **Backend:**
-  - Node.js & Express.js (ES Modules)
-  - JWT (JSON Web Token) & bcryptjs (Mã hóa mật khẩu & xác thực)
+  - Node.js & Express.js (ES Modules, Body limit 10MB)
+  - JWT (JSON Web Token) & bcryptjs
   - Morgan & CORS
 - **Database:**
   - MongoDB & Mongoose ORM
@@ -94,6 +99,18 @@ quizlet/
    npm run dev
    ```
 3. Truy cập vào trình duyệt: `http://localhost:5173`
+
+---
+
+### Bước 3: Khởi động Ứng Dụng Di Động (Mobile App)
+1. Mở một cửa sổ terminal mới và chuyển vào thư mục `mobile`:
+   ```bash
+   cd mobile
+   npx expo start
+   ```
+2. Mở ứng dụng **Expo Go** trên điện thoại (tải miễn phí trên App Store hoặc Google Play).
+3. Quét mã QR hiển thị trong terminal để chạy app trực tiếp trên điện thoại!
+   *(Lưu ý: Điện thoại và máy tính kết nối chung mạng Wi-Fi; kiểm tra IP trong `mobile/src/config/api.js`).*
 
 ---
 

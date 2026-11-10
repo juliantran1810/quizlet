@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Sparkles,
@@ -10,23 +10,37 @@ import {
   Shield,
   Layers,
   Flame,
+  Menu,
+  X,
+  ChevronRight,
+  LogIn,
+  UserPlus,
+  Settings,
 } from 'lucide-react';
 
 export default function Navbar() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Tự động đóng menu khi chuyển trang
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
+    setMobileMenuOpen(false);
     logout();
     navigate('/login');
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
+        <Link to="/" className="flex items-center gap-2.5 group shrink-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
@@ -44,8 +58,8 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        {/* Desktop Navigation (>= md screens) */}
+        <div className="hidden md:flex items-center gap-3">
           {user ? (
             <>
               <Link
@@ -54,7 +68,7 @@ export default function Navbar() {
                 title="Quản lý bộ thẻ của tôi"
               >
                 <Layers className="w-4 h-4 text-indigo-600" />
-                <span className="hidden lg:inline">Bộ thẻ của tôi</span>
+                <span>Bộ thẻ của tôi</span>
               </Link>
 
               <Link
@@ -62,7 +76,7 @@ export default function Navbar() {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition active:scale-95"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Tạo bộ thẻ</span>
+                <span>Tạo bộ thẻ</span>
               </Link>
 
               {/* Admin button — chỉ hiển thị cho admin */}
@@ -73,7 +87,7 @@ export default function Navbar() {
                   title="Admin Workbench"
                 >
                   <Shield className="w-4 h-4" />
-                  <span className="hidden md:inline">Admin</span>
+                  <span>Admin</span>
                 </Link>
               )}
 
@@ -112,7 +126,7 @@ export default function Navbar() {
                       user.username.slice(0, 2).toUpperCase()
                     )}
                   </div>
-                  <span className="text-sm font-semibold text-slate-700 group-hover:text-indigo-600 hidden md:inline">
+                  <span className="text-sm font-semibold text-slate-700 group-hover:text-indigo-600">
                     {user.username}
                   </span>
                 </Link>
@@ -145,7 +159,164 @@ export default function Navbar() {
             </div>
           )}
         </div>
+
+        {/* Mobile Action Controls (< md screens) */}
+        <div className="flex md:hidden items-center gap-2">
+          {user && (
+            <Link
+              to="/account"
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-black transition border shadow-xs ${
+                (user.streakCount || 0) > 0
+                  ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-orange-200 text-orange-600'
+                  : 'bg-slate-50 border-slate-200 text-slate-400'
+              }`}
+            >
+              <Flame
+                className={`w-4 h-4 ${
+                  (user.streakCount || 0) > 0
+                    ? 'fill-orange-500 text-orange-600'
+                    : 'text-slate-400'
+                }`}
+              />
+              <span>{user.streakCount || 0}</span>
+            </Link>
+          )}
+
+          {/* Hamburger Menu Toggle Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Mở menu điều hướng"
+            className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 border border-slate-200 active:scale-95 transition"
+          >
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5 text-slate-800" />
+            ) : (
+              <Menu className="w-5 h-5 text-slate-800" />
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Menu Dropdown Sheet */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-slate-200 bg-white/98 backdrop-blur-xl px-4 py-4 space-y-4 shadow-2xl animate-in slide-in-from-top-2 duration-150">
+          {user ? (
+            <>
+              {/* User Info Header Card */}
+              <Link
+                to="/account"
+                className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50/50 transition"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center justify-center font-black text-base overflow-hidden shrink-0">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                  ) : (
+                    user.username.slice(0, 2).toUpperCase()
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-slate-900 text-base truncate">
+                      {user.username}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                      {user.role === 'admin' ? 'Admin' : 'Học viên'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 truncate mt-0.5">{user.email}</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+              </Link>
+
+              {/* Main Actions List */}
+              <div className="space-y-1.5 pt-1">
+                <Link
+                  to="/create"
+                  className="flex items-center justify-between p-3 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-sm active:scale-[0.98] transition"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <PlusCircle className="w-5 h-5" />
+                    <span>Tạo bộ thẻ mới</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 opacity-80" />
+                </Link>
+
+                <Link
+                  to="/account"
+                  className="flex items-center justify-between p-3 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm transition"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Layers className="w-5 h-5 text-indigo-600" />
+                    <span>Bộ thẻ của tôi</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </Link>
+
+                {user.role === 'admin' && (
+                  <Link
+                    to="/admin"
+                    className="flex items-center justify-between p-3 rounded-xl bg-amber-50 text-amber-800 font-semibold text-sm border border-amber-200 transition"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Shield className="w-5 h-5 text-amber-600" />
+                      <span>Quản trị hệ thống (Admin)</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-amber-500" />
+                  </Link>
+                )}
+
+                <Link
+                  to="/account"
+                  className="flex items-center justify-between p-3 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm transition"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Settings className="w-5 h-5 text-slate-500" />
+                    <span>Cài đặt & Đổi mật khẩu</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </Link>
+              </div>
+
+              {/* Logout button */}
+              <div className="pt-2 border-t border-slate-100">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 font-bold text-sm hover:bg-rose-100 transition active:scale-[0.98]"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-3 py-1">
+              <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl">
+                <p className="text-xs font-semibold text-indigo-900 leading-relaxed">
+                  Chào mừng đến với Memora! Đăng nhập để ghi nhớ từ vựng thông minh qua Flashcard & Leitner.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Link
+                  to="/login"
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-sm transition"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Đăng nhập</span>
+                </Link>
+
+                <Link
+                  to="/register"
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition"
+                >
+                  <UserPlus className="w-4 h-4 text-slate-500" />
+                  <span>Đăng ký tài khoản mới</span>
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 }
