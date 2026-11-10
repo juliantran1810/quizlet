@@ -219,4 +219,12 @@ export function speak(text, forceLang = null, rate = 0.85) {
   }
 }
 
+export function speakTerm(text) {
+  speak(text);
+}
+
+export function speakChinese(text) {
+  speak(text, 'zh-CN');
+}
+
 export default speak;

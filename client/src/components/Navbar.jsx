@@ -30,11 +30,11 @@ export default function Navbar() {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-700 to-indigo-500 bg-clip-text text-transparent">
-                Quizlet
+              <span className="text-xl font-black tracking-tight bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 bg-clip-text text-transparent">
+                Memora
               </span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">
-                Clone
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 border border-indigo-100">
+                PRO
               </span>
             </div>
             <p className="text-[11px] text-slate-400 font-medium -mt-1 hidden sm:block">

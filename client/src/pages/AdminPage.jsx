@@ -240,7 +240,7 @@ export default function AdminPage() {
         </div>
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800">Admin Workbench</h1>
-          <p className="text-sm text-slate-400">Quản lý toàn bộ hệ thống Quizlet Clone</p>
+          <p className="text-sm text-slate-400">Quản lý toàn bộ hệ sinh thái Memora</p>
         </div>
       </div>
 

@@ -20,6 +20,26 @@ const cardStatSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    isStarred: {
+      type: Boolean,
+      default: false,
+    },
+    // Thuật toán Leitner Spaced Repetition (Box 1 -> Box 5)
+    box: {
+      type: Number,
+      default: 1,
+      min: 1,
+      max: 5,
+    },
+    nextReviewAt: {
+      type: Date,
+      default: Date.now,
+    },
+    consecutiveCorrect: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   { _id: false }
 );
@@ -59,6 +79,17 @@ userProgressSchema.virtual('masteredCount').get(function () {
 
 userProgressSchema.virtual('learningCount').get(function () {
   return this.cardStats ? this.cardStats.filter((c) => c.status === 'learning').length : 0;
+});
+
+userProgressSchema.virtual('starredCount').get(function () {
+  return this.cardStats ? this.cardStats.filter((c) => c.isStarred).length : 0;
+});
+
+// Virtual tính số thẻ đến hạn ôn tập theo Spaced Repetition (nextReviewAt <= now)
+userProgressSchema.virtual('dueCount').get(function () {
+  if (!this.cardStats) return 0;
+  const now = new Date();
+  return this.cardStats.filter((c) => c.nextReviewAt && new Date(c.nextReviewAt) <= now).length;
 });
 
 const UserProgress = mongoose.model('UserProgress', userProgressSchema);

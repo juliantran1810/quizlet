@@ -7,8 +7,8 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-indigo-600" />
-          <span className="font-semibold text-slate-700">Quizlet Fake</span>
-          <span>— Dành cho Minnoc</span>
+          <span className="font-bold text-slate-800">Memora</span>
+          <span>— Nền tảng học tập thông minh</span>
         </div>
       </div>
     </footer>

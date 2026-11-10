@@ -66,12 +66,31 @@ export const updateProgress = async (req, res) => {
       });
     }
 
+    const isCorrect = status === 'mastered';
+    // Khoảng ngày giãn cách theo Leitner: Box 1: 1 ngày, Box 2: 3 ngày, Box 3: 7 ngày, Box 4: 14 ngày, Box 5: 30 ngày
+    const LEITNER_DAYS = { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 };
+
+    const calculateNextReview = (currentBox, correct) => {
+      let newBox = currentBox || 1;
+      let newConsecutive = 0;
+      if (correct) {
+        newBox = Math.min(5, newBox + 1);
+      } else {
+        newBox = 1; // Sai thì bắt đầu lại từ Box 1
+      }
+      const daysToAdd = LEITNER_DAYS[newBox] || 1;
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + daysToAdd);
+      return { newBox, nextDate };
+    };
+
     let progress = await UserProgress.findOne({
       user: req.user._id,
       deck: deckId,
     });
 
     if (!progress) {
+      const { newBox, nextDate } = calculateNextReview(1, isCorrect);
       progress = new UserProgress({
         user: req.user._id,
         deck: deckId,
@@ -79,6 +98,9 @@ export const updateProgress = async (req, res) => {
           {
             cardId,
             status,
+            box: newBox,
+            nextReviewAt: nextDate,
+            consecutiveCorrect: isCorrect ? 1 : 0,
             reviewCount: 1,
             lastReviewedAt: new Date(),
           },
@@ -91,13 +113,23 @@ export const updateProgress = async (req, res) => {
       );
 
       if (cardIndex > -1) {
-        progress.cardStats[cardIndex].status = status;
-        progress.cardStats[cardIndex].reviewCount += 1;
-        progress.cardStats[cardIndex].lastReviewedAt = new Date();
+        const currentStat = progress.cardStats[cardIndex];
+        const { newBox, nextDate } = calculateNextReview(currentStat.box || 1, isCorrect);
+
+        currentStat.status = status;
+        currentStat.box = newBox;
+        currentStat.nextReviewAt = nextDate;
+        currentStat.consecutiveCorrect = isCorrect ? (currentStat.consecutiveCorrect || 0) + 1 : 0;
+        currentStat.reviewCount = (currentStat.reviewCount || 0) + 1;
+        currentStat.lastReviewedAt = new Date();
       } else {
+        const { newBox, nextDate } = calculateNextReview(1, isCorrect);
         progress.cardStats.push({
           cardId,
           status,
+          box: newBox,
+          nextReviewAt: nextDate,
+          consecutiveCorrect: isCorrect ? 1 : 0,
           reviewCount: 1,
           lastReviewedAt: new Date(),
         });
@@ -136,6 +168,84 @@ export const resetProgress = async (req, res) => {
     res.status(200).json({
       status: 'success',
       message: 'Đã đặt lại tiến độ học thành công',
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Gắn sao / bỏ gắn sao một thẻ trong bộ
+// @route   PATCH /api/progress/:deckId/cards/:cardId/star
+// @access  Private
+export const toggleCardStar = async (req, res) => {
+  try {
+    const { deckId, cardId } = req.params;
+    const { isStarred } = req.body;
+
+    let progress = await UserProgress.findOne({
+      user: req.user._id,
+      deck: deckId,
+    });
+
+    let newStarredState = true;
+
+    if (!progress) {
+      if (isStarred !== undefined) {
+        newStarredState = Boolean(isStarred);
+      }
+      progress = new UserProgress({
+        user: req.user._id,
+        deck: deckId,
+        cardStats: [
+          {
+            cardId,
+            status: 'learning',
+            reviewCount: 0,
+            isStarred: newStarredState,
+            lastReviewedAt: new Date(),
+          },
+        ],
+        lastStudiedAt: new Date(),
+      });
+    } else {
+      const cardIndex = progress.cardStats.findIndex(
+        (c) => c.cardId.toString() === cardId.toString()
+      );
+
+      if (cardIndex > -1) {
+        if (isStarred !== undefined) {
+          progress.cardStats[cardIndex].isStarred = Boolean(isStarred);
+        } else {
+          progress.cardStats[cardIndex].isStarred = !progress.cardStats[cardIndex].isStarred;
+        }
+        newStarredState = progress.cardStats[cardIndex].isStarred;
+      } else {
+        if (isStarred !== undefined) {
+          newStarredState = Boolean(isStarred);
+        }
+        progress.cardStats.push({
+          cardId,
+          status: 'learning',
+          reviewCount: 0,
+          isStarred: newStarredState,
+          lastReviewedAt: new Date(),
+        });
+      }
+      progress.lastStudiedAt = new Date();
+    }
+
+    await progress.save();
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        cardId,
+        isStarred: newStarredState,
+        progress,
+      },
     });
   } catch (error) {
     res.status(500).json({

@@ -320,7 +320,7 @@ export default function QuizModePage() {
       </div>
 
       <div className="text-center text-xs text-slate-400 py-2">
-        Quizlet Clone • Tự động tạo câu hỏi trắc nghiệm thông minh
+        Memora • Tự động tạo câu hỏi trắc nghiệm thông minh
       </div>
     </div>
   );

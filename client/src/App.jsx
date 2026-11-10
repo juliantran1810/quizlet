@@ -15,6 +15,7 @@ import QuizModePage from './pages/QuizModePage';
 import MatchGamePage from './pages/MatchGamePage';
 import AdminPage from './pages/AdminPage';
 import ManageAccountPage from './pages/ManageAccountPage';
+import LearnModePage from './pages/LearnModePage';
 
 // Private Route Guard
 const PrivateRoute = ({ children }) => {
@@ -71,6 +72,7 @@ function AppRoutes() {
 
           {/* Interactive Study & Game Modes */}
           <Route path="/decks/:id/flashcards" element={<FlashcardStudyPage />} />
+          <Route path="/decks/:id/learn" element={<LearnModePage />} />
           <Route path="/decks/:id/quiz" element={<QuizModePage />} />
           <Route path="/decks/:id/match" element={<MatchGamePage />} />
 

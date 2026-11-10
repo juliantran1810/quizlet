@@ -20,6 +20,8 @@ import {
   Lock,
   Globe,
   Star,
+  Sparkles,
+  SpellCheck,
 } from 'lucide-react';
 
 export default function DeckDetailPage() {
@@ -149,6 +151,7 @@ export default function DeckDetailPage() {
   const isAuthor = user && deck.author && deck.author._id === user._id;
   const totalCards = deck.cards?.length || 0;
   const masteredCount = progress?.masteredCount || 0;
+  const dueCount = progress?.dueCount || 0;
   const starredCount = Object.values(cardStars).filter(Boolean).length;
   const progressPercent = totalCards > 0 ? Math.round((masteredCount / totalCards) * 100) : 0;
 
@@ -253,44 +256,62 @@ export default function DeckDetailPage() {
         )}
       </div>
 
-      {/* 3 Study Modes Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+      {/* 4 Study Modes Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
         <Link
           to={`/decks/${id}/flashcards`}
-          className="group p-5 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-md hover:shadow-indigo-200 hover:scale-[1.02] transition-all flex items-center gap-4"
+          className="group p-5 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-md hover:shadow-indigo-200 hover:scale-[1.02] transition-all flex items-center gap-3.5"
         >
-          <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
-            <Layers className="w-6 h-6 text-white" />
+          <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+            <Layers className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-base">Thẻ ghi nhớ (Flashcards)</h3>
-            <p className="text-xs text-indigo-100 mt-0.5">Lật thẻ 3D & phát âm audio</p>
+            <h3 className="font-bold text-sm">Thẻ ghi nhớ</h3>
+            <p className="text-[11px] text-indigo-100 mt-0.5">Lật thẻ 3D & audio</p>
+          </div>
+        </Link>
+
+        <Link
+          to={`/decks/${id}/learn`}
+          className="group p-5 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md hover:shadow-emerald-200 hover:scale-[1.02] transition-all flex items-center gap-3.5 relative overflow-hidden"
+        >
+          {dueCount > 0 && (
+            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 font-extrabold text-[10px] shadow">
+              {dueCount} đến hạn
+            </span>
+          )}
+          <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+            <SpellCheck className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm">Luyện gõ từ</h3>
+            <p className="text-[11px] text-emerald-100 mt-0.5">Active Recall & Leitner</p>
           </div>
         </Link>
 
         <Link
           to={`/decks/${id}/quiz`}
-          className="group p-5 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 text-white shadow-md hover:shadow-purple-200 hover:scale-[1.02] transition-all flex items-center gap-4"
+          className="group p-5 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 text-white shadow-md hover:shadow-purple-200 hover:scale-[1.02] transition-all flex items-center gap-3.5"
         >
-          <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
-            <BrainCircuit className="w-6 h-6 text-white" />
+          <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+            <BrainCircuit className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-base">Trắc nghiệm (Quiz Mode)</h3>
-            <p className="text-xs text-purple-100 mt-0.5">Lựa chọn 4 đáp án thông minh</p>
+            <h3 className="font-bold text-sm">Trắc nghiệm</h3>
+            <p className="text-[11px] text-purple-100 mt-0.5">4 đáp án thông minh</p>
           </div>
         </Link>
 
         <Link
           to={`/decks/${id}/match`}
-          className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md hover:shadow-amber-200 hover:scale-[1.02] transition-all flex items-center gap-4"
+          className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md hover:shadow-amber-200 hover:scale-[1.02] transition-all flex items-center gap-3.5"
         >
-          <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
-            <Gamepad2 className="w-6 h-6 text-white" />
+          <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+            <Gamepad2 className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-base">Ghép từ (Match Game)</h3>
-            <p className="text-xs text-amber-100 mt-0.5">Đua thời gian ghép cặp từ vựng</p>
+            <h3 className="font-bold text-sm">Ghép từ</h3>
+            <p className="text-[11px] text-amber-100 mt-0.5">Đua thời gian ghép cặp</p>
           </div>
         </Link>
       </div>

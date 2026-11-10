@@ -42,6 +42,13 @@ class SoundEffects {
     return () => this.listeners.delete(callback);
   }
 
+  // Phát âm thanh theo tên: sfx.play('correct'), sfx.play('wrong'), sfx.play('fanfare'), etc.
+  play(soundName) {
+    if (this[soundName] && typeof this[soundName] === 'function') {
+      this[soundName]();
+    }
+  }
+
   // Âm thanh lật thẻ Flashcard (tiếng phẩy thẻ nhẹ nhàng, tự nhiên)
   flip() {
     if (this.muted) return;

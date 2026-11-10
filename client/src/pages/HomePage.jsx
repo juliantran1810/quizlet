@@ -1,26 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { deckService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
   Search,
   BookOpen,
   Layers,
-  ArrowRight,
   BrainCircuit,
   Gamepad2,
-  Sparkles,
   Plus,
+  Lock,
+  Globe,
+  Sparkles,
+  X,
+  User,
+  SpellCheck,
 } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Tiếng Trung', 'Tiếng Anh', 'Công nghệ', 'Khoa học', 'Lịch sử', 'Y Dược', 'General'];
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
   const [decks, setDecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [viewScope, setViewScope] = useState('all'); // 'all' | 'my'
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchBoxRef = useRef(null);
@@ -47,7 +55,7 @@ export default function HomePage() {
         search: searchTerm,
         category: selectedCategory === 'All' ? undefined : selectedCategory,
       });
-      setDecks(res.data.decks);
+      setDecks(res.data.decks || []);
     } catch (err) {
       console.error('Lỗi khi tải bộ thẻ:', err);
     } finally {
@@ -59,12 +67,14 @@ export default function HomePage() {
     setSearch(val);
     const trimmed = val.trim().toLowerCase();
     if (trimmed.length > 0) {
-      const matched = decks.filter(
-        (d) =>
-          d.title.toLowerCase().includes(trimmed) ||
-          (d.description && d.description.toLowerCase().includes(trimmed)) ||
-          (d.category && d.category.toLowerCase().includes(trimmed))
-      ).slice(0, 5);
+      const matched = decks
+        .filter(
+          (d) =>
+            d.title.toLowerCase().includes(trimmed) ||
+            (d.description && d.description.toLowerCase().includes(trimmed)) ||
+            (d.category && d.category.toLowerCase().includes(trimmed))
+        )
+        .slice(0, 5);
       setSearchSuggestions(matched);
       setShowSearchDropdown(true);
     } else {
@@ -79,42 +89,80 @@ export default function HomePage() {
     fetchDecks(search);
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-b from-indigo-900 via-indigo-800 to-indigo-700 text-white py-16 sm:py-20 px-4">
-        <div className="max-w-5xl mx-auto text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-indigo-200 text-xs font-semibold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            Phương pháp Spaced Repetition thông minh
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-            Chinh Phục Mọi Kiến Thức Với <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-indigo-200 to-white">
-              Flashcard 3D & Mini Game
-            </span>
-          </h1>
-          <p className="max-w-2xl mx-auto text-slate-200 text-base sm:text-lg">
-            Học từ vựng, ôn luyện bài thi dễ dàng qua thẻ ghi nhớ 3D, bài trắc nghiệm thông minh và game ghép từ sinh động.
-          </p>
+  const handleClearSearch = () => {
+    setSearch('');
+    setSearchSuggestions([]);
+    setShowSearchDropdown(false);
+    fetchDecks('');
+  };
 
-          {/* Search Box with Autocomplete Suggestions */}
-          <div ref={searchBoxRef} className="max-w-xl mx-auto relative">
-            <form onSubmit={handleSearchSubmit} className="flex items-center bg-white rounded-2xl p-1.5 shadow-2xl">
-              <Search className="w-5 h-5 text-slate-400 ml-3 shrink-0" />
+  // Lọc theo viewScope (Tất cả vs Bộ thẻ của tôi)
+  const displayedDecks = viewScope === 'my' && user
+    ? decks.filter((d) => d.author && d.author._id === user._id)
+    : decks;
+
+  const myDecksCount = user
+    ? decks.filter((d) => d.author && d.author._id === user._id).length
+    : 0;
+
+  return (
+    <div className="min-h-screen bg-slate-50/70">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        {/* Header tinh giản, tập trung vào nội dung */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">
+              {user ? (
+                <span>
+                  Chào mừng, <span className="text-indigo-600">{user.username}</span> 👋
+                </span>
+              ) : (
+                'Thư viện học tập'
+              )}
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Khám phá các bộ thẻ ghi nhớ, ôn luyện từ vựng và nâng cao hiệu quả học tập.
+            </p>
+          </div>
+
+          <Link
+            to="/create"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition active:scale-95 self-start md:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tạo bộ thẻ mới</span>
+          </Link>
+        </div>
+
+        {/* Thanh Tìm kiếm & Điều hướng Bộ lọc */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm mb-8 space-y-4">
+          {/* Ô tìm kiếm có Autocomplete */}
+          <div ref={searchBoxRef} className="relative">
+            <form onSubmit={handleSearchSubmit} className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition">
+              <Search className="w-4 h-4 text-slate-400 shrink-0 mr-2.5" />
               <input
                 type="text"
-                placeholder="Tìm kiếm bộ thẻ theo tên hoặc mô tả..."
+                placeholder="Tìm kiếm bộ từ vựng, chủ đề học..."
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => {
                   if (search.trim().length > 0) setShowSearchDropdown(true);
                 }}
-                className="w-full px-3 py-2 text-slate-800 text-sm focus:outline-none placeholder:text-slate-400"
+                className="w-full bg-transparent text-slate-800 text-sm focus:outline-none placeholder:text-slate-400"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="p-1 text-slate-400 hover:text-slate-600 transition"
+                  title="Xóa tìm kiếm"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition shrink-0"
+                className="ml-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition shrink-0"
               >
                 Tìm
               </button>
@@ -122,10 +170,10 @@ export default function HomePage() {
 
             {/* Dropdown gợi ý tìm kiếm */}
             {showSearchDropdown && searchSuggestions.length > 0 && (
-              <div className="absolute z-40 left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden text-left divide-y divide-slate-100 animate-in fade-in duration-150">
-                <div className="px-4 py-2 bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>Gợi ý bộ thẻ phù hợp</span>
-                  <span className="text-[10px] font-normal text-slate-400">Click để vào học ngay</span>
+              <div className="absolute z-40 left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden divide-y divide-slate-100 animate-in fade-in duration-150">
+                <div className="px-3 py-2 bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>Gợi ý nhanh</span>
+                  <span className="text-[10px] font-normal text-slate-400">Bấm để mở bộ thẻ</span>
                 </div>
                 <div className="max-h-60 overflow-y-auto">
                   {searchSuggestions.map((deck) => (
@@ -136,13 +184,13 @@ export default function HomePage() {
                         setShowSearchDropdown(false);
                         navigate(`/decks/${deck._id}`);
                       }}
-                      className="w-full px-4 py-3 hover:bg-indigo-50/70 transition flex items-center justify-between group"
+                      className="w-full px-4 py-2.5 hover:bg-indigo-50/70 transition flex items-center justify-between text-left group"
                     >
                       <div className="min-w-0 pr-3">
                         <div className="font-bold text-sm text-slate-800 group-hover:text-indigo-600 truncate">
                           {deck.title}
                         </div>
-                        <div className="text-xs text-slate-400 line-clamp-1 mt-0.5">
+                        <div className="text-xs text-slate-400 line-clamp-1">
                           {deck.description || 'Không có mô tả chi tiết'}
                         </div>
                       </div>
@@ -160,124 +208,210 @@ export default function HomePage() {
               </div>
             )}
           </div>
-        </div>
-      </section>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Category Pills & Quick Action */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
-                  selectedCategory === cat
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          {/* Hàng bộ lọc: Phạm vi (Tất cả / Của tôi) & Danh mục thẻ */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            {/* Chuyển đổi phạm vi hiển thị (nếu đã đăng nhập) */}
+            {user ? (
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl self-start">
+                <button
+                  onClick={() => setViewScope('all')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                    viewScope === 'all'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Tất cả ({decks.length})
+                </button>
+                <button
+                  onClick={() => setViewScope('my')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                    viewScope === 'my'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Bộ thẻ của tôi ({myDecksCount})
+                </button>
+              </div>
+            ) : (
+              <div className="text-xs font-semibold text-slate-500">
+                Thể loại kiến thức:
+              </div>
+            )}
+
+            {/* Category Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 text-xs">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1 rounded-lg font-medium whitespace-nowrap transition ${
+                    selectedCategory === cat
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {cat === 'All' ? 'Tất cả thể loại' : cat}
+                </button>
+              ))}
+            </div>
           </div>
-
-          <Link
-            to="/create"
-            className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline"
-          >
-            <Plus className="w-4 h-4" /> Tạo bộ thẻ của riêng bạn
-          </Link>
         </div>
 
-        {/* Deck List Grid */}
+        {/* Danh sách Bộ thẻ (Deck Cards Grid) */}
         {loading ? (
           <LoadingSpinner message="Đang tải danh sách bộ thẻ..." />
-        ) : decks.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+        ) : displayedDecks.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
             <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-slate-700">Chưa có bộ thẻ nào</h3>
-            <p className="text-sm text-slate-400 mt-1 mb-6">
-              Hãy tạo ngay bộ thẻ đầu tiên để bắt đầu học tập và chia sẻ nhé!
+            <h3 className="text-base font-bold text-slate-700">
+              {search ? 'Không tìm thấy bộ thẻ nào phù hợp' : 'Chưa có bộ thẻ nào'}
+            </h3>
+            <p className="text-xs text-slate-400 mt-1 mb-5 max-w-sm mx-auto">
+              {search
+                ? `Không có kết quả nào khớp với từ khóa "${search}". Hãy thử từ khóa khác.`
+                : 'Bắt đầu ngay bằng cách tạo bộ từ vựng đầu tiên của bạn.'}
             </p>
-            <Link
-              to="/create"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
-            >
-              <Plus className="w-4 h-4" /> Tạo bộ thẻ mới
-            </Link>
+            {search ? (
+              <button
+                onClick={handleClearSearch}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+              >
+                Xóa tìm kiếm
+              </button>
+            ) : (
+              <Link
+                to="/create"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition"
+              >
+                <Plus className="w-4 h-4" /> Tạo bộ thẻ mới
+              </Link>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {decks.map((deck) => (
-              <div
-                key={deck._id}
-                className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex flex-col justify-between group"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-semibold text-xs">
-                      {deck.category || 'General'}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
-                      <Layers className="w-3.5 h-3.5" />
-                      {deck.cards?.length || 0} thẻ
-                    </span>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {displayedDecks.map((deck) => {
+              const totalCards = deck.cards?.length || 0;
+              const isOwner = user && deck.author && deck.author._id === user._id;
 
-                  <Link to={`/decks/${deck._id}`}>
-                    <h3 className="font-bold text-lg text-slate-800 group-hover:text-indigo-600 transition line-clamp-1">
-                      {deck.title}
-                    </h3>
-                  </Link>
-
-                  <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 min-h-[32px]">
-                    {deck.description || 'Không có mô tả chi tiết.'}
-                  </p>
-                </div>
-
-                {/* Footer and Mode Actions */}
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[10px] flex items-center justify-center">
-                      {deck.author?.username?.slice(0, 1).toUpperCase() || 'U'}
+              return (
+                <div
+                  key={deck._id}
+                  className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    {/* Header Card: Category & Card Count & Visibility Tag */}
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold text-[11px]">
+                          {deck.category || 'General'}
+                        </span>
+                        {isOwner && (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              deck.isPublic
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-amber-50 text-amber-800'
+                            }`}
+                          >
+                            {deck.isPublic ? <Globe className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
+                            {deck.isPublic ? 'Công khai' : 'Riêng tư'}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                        <Layers className="w-3.5 h-3.5 text-slate-400" />
+                        {totalCards} thẻ
+                      </span>
                     </div>
-                    <span className="text-xs text-slate-500 font-medium">
-                      {deck.author?.username || 'Ẩn danh'}
-                    </span>
+
+                    {/* Deck Title */}
+                    <Link to={`/decks/${deck._id}`}>
+                      <h3 className="font-bold text-base text-slate-800 group-hover:text-indigo-600 transition line-clamp-1">
+                        {deck.title}
+                      </h3>
+                    </Link>
+
+                    {/* Deck Description */}
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-2 min-h-[32px] leading-relaxed">
+                      {deck.description || 'Không có mô tả chi tiết.'}
+                    </p>
+
+                    {/* Preview từ vựng thực tế (Tập trung vào nội dung) */}
+                    {deck.cards && deck.cards.length > 0 && (
+                      <div className="my-3 py-2 px-3 bg-slate-50/80 rounded-xl border border-slate-100 flex flex-wrap gap-1.5 text-xs">
+                        {deck.cards.slice(0, 3).map((c, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-slate-200/60 shadow-2xs text-[11px]"
+                          >
+                            <span className="font-bold text-indigo-700">{c.term}</span>
+                            <span className="text-slate-300">·</span>
+                            <span className="text-slate-600 truncate max-w-[90px]">{c.definition}</span>
+                          </span>
+                        ))}
+                        {deck.cards.length > 3 && (
+                          <span className="text-[10px] font-semibold text-slate-400 self-center px-1">
+                            +{deck.cards.length - 3} nữa
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <Link
-                      to={`/decks/${deck._id}/flashcards`}
-                      title="Lật thẻ 3D"
-                      className="p-2 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition"
-                    >
-                      <Layers className="w-4 h-4" />
-                    </Link>
-                    <Link
-                      to={`/decks/${deck._id}/quiz`}
-                      title="Luyện trắc nghiệm"
-                      className="p-2 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition"
-                    >
-                      <BrainCircuit className="w-4 h-4" />
-                    </Link>
-                    <Link
-                      to={`/decks/${deck._id}/match`}
-                      title="Game ghép từ"
-                      className="p-2 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition"
-                    >
-                      <Gamepad2 className="w-4 h-4" />
-                    </Link>
+                  {/* Footer & Quick Actions */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    {/* Tác giả */}
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px] flex items-center justify-center border border-slate-200">
+                        {deck.author?.username?.slice(0, 1).toUpperCase() || 'U'}
+                      </div>
+                      <span className="text-xs text-slate-500 font-medium truncate max-w-[100px]">
+                        {deck.author?.username || 'Ẩn danh'}
+                      </span>
+                    </div>
+
+                    {/* Nút vào học: Primary CTA + Quick Mode Icons */}
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        to={`/decks/${deck._id}/flashcards`}
+                        className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-semibold transition flex items-center gap-1"
+                        title="Học Flashcard 3D"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>Học ngay</span>
+                      </Link>
+                      <Link
+                        to={`/decks/${deck._id}/learn`}
+                        title="Luyện gõ từ (Active Recall)"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition"
+                      >
+                        <SpellCheck className="w-4 h-4" />
+                      </Link>
+                      <Link
+                        to={`/decks/${deck._id}/quiz`}
+                        title="Luyện trắc nghiệm"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition"
+                      >
+                        <BrainCircuit className="w-4 h-4" />
+                      </Link>
+                      <Link
+                        to={`/decks/${deck._id}/match`}
+                        title="Game ghép từ"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition"
+                      >
+                        <Gamepad2 className="w-4 h-4" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
     </div>
   );
 }
-

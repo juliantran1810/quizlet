@@ -3,6 +3,7 @@ import {
   getProgress,
   updateProgress,
   resetProgress,
+  toggleCardStar,
 } from '../controllers/progressController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 
@@ -14,6 +15,8 @@ router.route('/:deckId')
   .get(getProgress)
   .post(updateProgress)
   .delete(resetProgress);
+
+router.patch('/:deckId/cards/:cardId/star', toggleCardStar);
 
 export default router;
 
