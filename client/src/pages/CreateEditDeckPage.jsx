@@ -67,15 +67,17 @@ function BulkImportModal({ onClose, onImport }) {
   // Phát hiện dấu phân cách thông minh dựa trên nội dung dán vào
   const detectSeparator = (text) => {
     const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-    if (lines.length === 0) return ',';
-    const sample = lines.slice(0, 5);
+    if (lines.length === 0) return ' - ';
+    const sample = lines.slice(0, 10);
 
-    // Ưu tiên kiểm tra: Tab (Excel/Quizlet) -> Dấu phẩy -> Dấu gạch -> Dấu chấm phẩy
+    // Ưu tiên kiểm tra: Tab (Excel/Quizlet) -> Dấu gạch ( - / – / — ) -> Dấu hai chấm (:) -> Dấu chấm phẩy (;) -> Dấu phẩy (,)
+    // LƯU Ý: Không được ưu tiên dấu phẩy trước dấu gạch, vì định nghĩa tiếng Việt thường dùng dấu phẩy để ngăn các từ đồng nghĩa!
     if (sample.some((l) => l.includes('\t'))) return '\t';
-    if (sample.some((l) => l.includes(','))) return ',';
-    if (sample.some((l) => l.includes(' - ') || l.includes(' – ') || l.includes(' — '))) return ' - ';
+    if (sample.some((l) => /\s*[-–—]\s*/.test(l))) return ' - ';
+    if (sample.some((l) => /\s*[:：]\s*/.test(l))) return ':';
     if (sample.some((l) => l.includes(';'))) return ';';
-    return ',';
+    if (sample.some((l) => l.includes(','))) return ',';
+    return ' - ';
   };
 
   // Parse raw text thành mảng thẻ
@@ -91,18 +93,48 @@ function BulkImportModal({ onClose, onImport }) {
 
       return lines
         .map((line) => {
-          let parts;
+          let rawTerm = '';
+          let rawDef = '';
+
           if (actual_sep === ' - ') {
-            parts = line.split(/\s*[-–—]\s*/);
+            const parts = line.split(/\s*[-–—]\s*/);
+            if (parts.length >= 2) {
+              rawTerm = parts[0];
+              rawDef = parts.slice(1).join(' - ');
+            }
+          } else if (actual_sep === ':') {
+            const parts = line.split(/\s*[:：]\s*/);
+            if (parts.length >= 2) {
+              rawTerm = parts[0];
+              rawDef = parts.slice(1).join(': ');
+            }
           } else {
-            parts = line.split(actual_sep);
+            const parts = line.split(actual_sep);
+            if (parts.length >= 2) {
+              rawTerm = parts[0];
+              rawDef = parts.slice(1).join(actual_sep);
+            }
           }
-          parts = parts.map((p) => p.trim());
-          if (parts.length < 2) return null;
+
+          if (!rawTerm.trim() || !rawDef.trim()) return null;
+
+          rawTerm = rawTerm.trim();
+          rawDef = rawDef.trim();
+
+          // Tự động bóc tách nếu Term có kèm Pinyin trong ngoặc, ví dụ: "你 (nǐ)" -> Term: "你", Pinyin: "nǐ"
+          let term = rawTerm;
+          let pinyin = '';
+
+          const pinyinMatch = rawTerm.match(/^([^\(\)（）]+)\s*[\(（]([^\(\)（）]+)[\)）]$/);
+          if (pinyinMatch) {
+            term = pinyinMatch[1].trim();
+            pinyin = pinyinMatch[2].trim();
+          }
+
           return {
-            term: parts[0] || '',
-            pinyin: '',
-            definition: parts.slice(1).join(' ') || '',
+            term,
+            pinyin,
+            definition: rawDef,
             hint: '',
             imageUrl: '',
           };
@@ -218,10 +250,11 @@ function BulkImportModal({ onClose, onImport }) {
             <div className="flex flex-wrap gap-2">
               {[
                 { label: '✨ Tự động nhận diện', value: 'auto' },
-                { label: 'Dấu phẩy (,)', value: ',' },
-                { label: 'Tab (Excel / Quizlet)', value: '\t' },
                 { label: 'Dấu gạch (-)', value: ' - ' },
+                { label: 'Tab (Excel / Quizlet)', value: '\t' },
+                { label: 'Dấu hai chấm (:)', value: ':' },
                 { label: 'Dấu chấm phẩy (;)', value: ';' },
+                { label: 'Dấu phẩy (,)', value: ',' },
               ].map((opt) => (
                 <button
                   key={opt.value}
@@ -544,10 +577,9 @@ export default function CreateEditDeckPage() {
     );
 
     setCards((prev) => {
-      // Lọc bỏ các thẻ trống ở cuối trước khi thêm
-      const cleaned = prev.filter((c) => c.term.trim() || c.definition.trim());
-      const base = cleaned.length >= 2 ? cleaned : prev;
-      return [...base, ...withPinyin];
+      // Lọc bỏ toàn bộ các thẻ trống hiện tại (ví dụ 2 thẻ mẫu ban đầu khi mới tạo bộ)
+      const existingFilledCards = prev.filter((c) => c.term.trim() || c.definition.trim());
+      return [...existingFilledCards, ...withPinyin];
     });
   };
 

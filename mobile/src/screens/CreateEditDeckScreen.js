@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { deckService } from '../services/api';
 
@@ -75,6 +76,85 @@ export default function CreateEditDeckScreen({ route, navigation }) {
 
   const handleAddCard = () => {
     setCards((prev) => [...prev, { term: '', pinyin: '', definition: '', example: '' }]);
+  };
+
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkText, setBulkText] = useState('');
+
+  const parseBulkText = (text) => {
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) return [];
+    const sample = lines.slice(0, 10);
+
+    let sep = ' - ';
+    if (sample.some((l) => l.includes('\t'))) sep = '\t';
+    else if (sample.some((l) => /\s*[-–—]\s*/.test(l))) sep = ' - ';
+    else if (sample.some((l) => /\s*[:：]\s*/.test(l))) sep = ':';
+    else if (sample.some((l) => l.includes(';'))) sep = ';';
+    else if (sample.some((l) => l.includes(','))) sep = ',';
+
+    return lines
+      .map((line) => {
+        let rawTerm = '';
+        let rawDef = '';
+
+        if (sep === ' - ') {
+          const parts = line.split(/\s*[-–—]\s*/);
+          if (parts.length >= 2) {
+            rawTerm = parts[0];
+            rawDef = parts.slice(1).join(' - ');
+          }
+        } else if (sep === ':') {
+          const parts = line.split(/\s*[:：]\s*/);
+          if (parts.length >= 2) {
+            rawTerm = parts[0];
+            rawDef = parts.slice(1).join(': ');
+          }
+        } else {
+          const parts = line.split(sep);
+          if (parts.length >= 2) {
+            rawTerm = parts[0];
+            rawDef = parts.slice(1).join(sep);
+          }
+        }
+
+        if (!rawTerm.trim() || !rawDef.trim()) return null;
+        rawTerm = rawTerm.trim();
+        rawDef = rawDef.trim();
+
+        let term = rawTerm;
+        let pinyin = '';
+        const pinyinMatch = rawTerm.match(/^([^\(\)（）]+)\s*[\(（]([^\(\)（）]+)[\)）]$/);
+        if (pinyinMatch) {
+          term = pinyinMatch[1].trim();
+          pinyin = pinyinMatch[2].trim();
+        }
+
+        return {
+          term,
+          pinyin,
+          definition: rawDef,
+          example: '',
+        };
+      })
+      .filter(Boolean);
+  };
+
+  const handleApplyBulkImport = () => {
+    const parsed = parseBulkText(bulkText);
+    if (parsed.length === 0) {
+      Alert.alert('Thông báo', 'Không nhận diện được thẻ nào từ nội dung dán vào.');
+      return;
+    }
+
+    setCards((prev) => {
+      const existingFilledCards = prev.filter((c) => c.term.trim() || c.definition.trim());
+      return [...existingFilledCards, ...parsed];
+    });
+
+    setBulkText('');
+    setShowBulkModal(false);
+    Alert.alert('Thành công', `Đã thêm ${parsed.length} thẻ vào bộ thẻ!`);
   };
 
   const handleDeleteCard = (index) => {
@@ -203,11 +283,19 @@ export default function CreateEditDeckScreen({ route, navigation }) {
           {/* Cards List Header */}
           <View style={styles.cardsHeaderRow}>
             <Text style={styles.sectionTitle}>
-              Danh Sách Thẻ Từ Vựng ({cards.length})
+              Danh Sách Thẻ ({cards.length})
             </Text>
-            <TouchableOpacity style={styles.addCardTopBtn} onPress={handleAddCard}>
-              <Text style={styles.addCardTopBtnText}>+ Thêm thẻ</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                style={styles.bulkImportBtn}
+                onPress={() => setShowBulkModal(true)}
+              >
+                <Text style={styles.bulkImportBtnText}>⚡ Nhập nhanh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.addCardTopBtn} onPress={handleAddCard}>
+                <Text style={styles.addCardTopBtnText}>+ Thêm thẻ</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Dynamic Cards */}
@@ -301,6 +389,77 @@ export default function CreateEditDeckScreen({ route, navigation }) {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Modal Nhập Nhanh (Bulk Import) */}
+      <Modal
+        visible={showBulkModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowBulkModal(false)}
+      >
+        <SafeAreaView style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalContent}
+          >
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>⚡ Nhập Nhanh Từ Văn Bản</Text>
+                <Text style={styles.modalSubtitle}>Paste từ Quizlet, Excel hoặc danh sách từ</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowBulkModal(false)}
+                style={styles.modalCloseBtn}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalTipBox}>
+              <Text style={styles.modalTipText}>
+                • Mỗi dòng = 1 từ vựng.{'\n'}
+                • Hỗ trợ: <Text style={{ fontWeight: '800' }}>你 (nǐ) - bạn</Text> hoặc Tab, Dấu gạch, Hai chấm, Dấu phẩy.
+              </Text>
+            </View>
+
+            <TextInput
+              style={styles.bulkInput}
+              multiline
+              textAlignVertical="top"
+              placeholder={`Dán danh sách từ vựng vào đây...\nVí dụ:\n你 (nǐ) - bạn, anh, chị\n好 (hǎo) - tốt, đẹp\n学 (xué) - học`}
+              placeholderTextColor="#94A3B8"
+              value={bulkText}
+              onChangeText={setBulkText}
+            />
+
+            <View style={styles.modalFooter}>
+              <Text style={styles.modalCountText}>
+                {parseBulkText(bulkText).length > 0
+                  ? `✅ Nhận diện được ${parseBulkText(bulkText).length} thẻ hợp lệ`
+                  : 'Chưa có nội dung hợp lệ'}
+              </Text>
+              <View style={styles.modalBtnRow}>
+                <TouchableOpacity
+                  onPress={() => setShowBulkModal(false)}
+                  style={styles.modalCancelBtn}
+                >
+                  <Text style={styles.modalCancelText}>Hủy bỏ</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleApplyBulkImport}
+                  disabled={parseBulkText(bulkText).length === 0}
+                  style={[
+                    styles.modalConfirmBtn,
+                    parseBulkText(bulkText).length === 0 && styles.modalConfirmBtnDisabled,
+                  ]}
+                >
+                  <Text style={styles.modalConfirmText}>Thêm vào bộ</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -445,6 +604,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 4,
   },
+  bulkImportBtn: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+    borderBottomWidth: 3,
+    borderBottomColor: '#F59E0B',
+  },
+  bulkImportBtnText: {
+    color: '#D97706',
+    fontSize: 12,
+    fontWeight: '800',
+  },
   addCardTopBtn: {
     backgroundColor: '#EEF2FF',
     paddingHorizontal: 12,
@@ -536,6 +710,125 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '800',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    maxHeight: '90%',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    borderBottomWidth: 5,
+    borderBottomColor: '#CBD5E1',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#64748B',
+  },
+  modalTipBox: {
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 12,
+  },
+  modalTipText: {
+    fontSize: 11,
+    color: '#3730A3',
+    lineHeight: 16,
+  },
+  bulkInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderRadius: 16,
+    padding: 14,
+    fontSize: 14,
+    color: '#0F172A',
+    minHeight: 180,
+    maxHeight: 260,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    marginBottom: 14,
+  },
+  modalFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 12,
+  },
+  modalCountText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
+    marginBottom: 10,
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderBottomWidth: 3,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  modalConfirmBtn: {
+    flex: 2,
+    backgroundColor: '#4F46E5',
+    borderRadius: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 4,
+    borderBottomColor: '#312E81',
+    alignItems: 'center',
+  },
+  modalConfirmBtnDisabled: {
+    opacity: 0.4,
+  },
+  modalConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '800',
   },
 });
