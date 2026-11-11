@@ -16,7 +16,7 @@ dotenv.config();
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    || 'admin@quizletclone.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@quizletclone.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@2026!';
 
 const run = async () => {

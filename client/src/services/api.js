@@ -147,5 +147,13 @@ export const adminService = {
   },
 };
 
+// AI Vision Services
+export const aiService = {
+  scanImage: async ({ imageBase64, mimeType, apiKey }) => {
+    const res = await api.post('/ai/scan-image', { imageBase64, mimeType, apiKey });
+    return res.data;
+  },
+};
+
 export default api;
 

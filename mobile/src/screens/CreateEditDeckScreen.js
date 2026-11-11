@@ -15,6 +15,7 @@ import {
   Modal,
 } from 'react-native';
 import { deckService } from '../services/api';
+import ImageScanModal from '../components/ImageScanModal';
 
 const CATEGORIES = ['Tiếng Trung', 'Tiếng Anh', 'HSK', 'Công nghệ', 'Y Dược', 'Chung'];
 
@@ -79,6 +80,7 @@ export default function CreateEditDeckScreen({ route, navigation }) {
   };
 
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showImageScanModal, setShowImageScanModal] = useState(false);
   const [bulkText, setBulkText] = useState('');
 
   const parseBulkText = (text) => {
@@ -155,6 +157,20 @@ export default function CreateEditDeckScreen({ route, navigation }) {
     setBulkText('');
     setShowBulkModal(false);
     Alert.alert('Thành công', `Đã thêm ${parsed.length} thẻ vào bộ thẻ!`);
+  };
+
+  const handleApplyImageScan = (scannedCards) => {
+    setCards((prev) => {
+      const existingFilled = prev.filter((c) => c.term.trim() || c.definition.trim());
+      const formatted = scannedCards.map((c) => ({
+        term: c.term || '',
+        pinyin: c.pinyin || '',
+        definition: c.definition || '',
+        example: c.hint || '',
+      }));
+      return [...existingFilled, ...formatted];
+    });
+    Alert.alert('Thành công', `Đã quét và thêm ${scannedCards.length} thẻ từ ảnh vào bộ!`);
   };
 
   const handleDeleteCard = (index) => {
@@ -285,7 +301,13 @@ export default function CreateEditDeckScreen({ route, navigation }) {
             <Text style={styles.sectionTitle}>
               Danh Sách Thẻ ({cards.length})
             </Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+              <TouchableOpacity
+                style={styles.aiScanBtn}
+                onPress={() => setShowImageScanModal(true)}
+              >
+                <Text style={styles.aiScanBtnText}>📷 Quét ảnh</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.bulkImportBtn}
                 onPress={() => setShowBulkModal(true)}
@@ -460,6 +482,13 @@ export default function CreateEditDeckScreen({ route, navigation }) {
           </KeyboardAvoidingView>
         </SafeAreaView>
       </Modal>
+
+      {/* AI Image Scan Modal */}
+      <ImageScanModal
+        visible={showImageScanModal}
+        onClose={() => setShowImageScanModal(false)}
+        onImport={handleApplyImageScan}
+      />
     </SafeAreaView>
   );
 }
@@ -603,6 +632,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
     marginTop: 4,
+  },
+  aiScanBtn: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#C7D2FE',
+    borderBottomWidth: 3,
+    borderBottomColor: '#6366F1',
+  },
+  aiScanBtnText: {
+    color: '#4F46E5',
+    fontSize: 12,
+    fontWeight: '800',
   },
   bulkImportBtn: {
     backgroundColor: '#FEF3C7',

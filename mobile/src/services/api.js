@@ -4,7 +4,7 @@ import { API_BASE_URL } from '../config/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -102,6 +102,13 @@ export const progressService = {
   },
   reset: async (deckId) => {
     const res = await api.delete(`/progress/${deckId}`);
+    return res.data;
+  },
+};
+
+export const aiService = {
+  scanImage: async ({ imageBase64, mimeType, apiKey }) => {
+    const res = await api.post('/ai/scan-image', { imageBase64, mimeType, apiKey });
     return res.data;
   },
 };

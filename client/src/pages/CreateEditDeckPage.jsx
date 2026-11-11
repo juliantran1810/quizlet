@@ -20,7 +20,9 @@ import {
   Eye,
   CheckCircle2,
   FileText,
+  Camera,
 } from 'lucide-react';
+import ImageScanModal from '../components/ImageScanModal';
 
 // ----- Danh sách gợi ý chủ đề -----
 const SUGGESTED_CATEGORIES = [
@@ -260,11 +262,10 @@ function BulkImportModal({ onClose, onImport }) {
                   key={opt.value}
                   type="button"
                   onClick={() => setTermSep(opt.value)}
-                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition ${
-                    termSep === opt.value
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-400'
-                  }`}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition ${termSep === opt.value
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-400'
+                    }`}
                 >
                   {opt.label}
                 </button>
@@ -393,6 +394,7 @@ export default function CreateEditDeckPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showImageScan, setShowImageScan] = useState(false);
 
   // Trạng thái gợi ý thông minh cho Term & Definition
   const [activeSuggestIndex, setActiveSuggestIndex] = useState(null);
@@ -634,6 +636,15 @@ export default function CreateEditDeckPage() {
         />
       )}
 
+      {/* AI Image Scan Modal */}
+      {showImageScan && (
+        <ImageScanModal
+          isOpen={showImageScan}
+          onClose={() => setShowImageScan(false)}
+          onImport={handleBulkImport}
+        />
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div className="flex items-center justify-between sm:justify-start gap-4">
@@ -758,9 +769,8 @@ export default function CreateEditDeckPage() {
                           setCategoryInput('');
                           setShowCategorySuggestions(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition flex items-center gap-2 ${
-                          category === cat.value ? 'font-bold text-indigo-700 bg-indigo-50/50' : 'text-slate-700'
-                        }`}
+                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition flex items-center gap-2 ${category === cat.value ? 'font-bold text-indigo-700 bg-indigo-50/50' : 'text-slate-700'
+                          }`}
                       >
                         <span>{cat.label}</span>
                         {category === cat.value && (
@@ -818,8 +828,19 @@ export default function CreateEditDeckPage() {
             <h2 className="text-lg font-bold text-slate-800">
               Danh sách thẻ ({cards.length})
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-slate-500 hidden sm:inline">Tối thiểu 2 thẻ hợp lệ</span>
+
+              {/* Nút mở AI Scan */}
+              <button
+                type="button"
+                onClick={() => setShowImageScan(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 font-semibold text-xs transition"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                Quét từ ảnh (AI)
+              </button>
+
               {/* Nút mở Bulk Import */}
               <button
                 type="button"
@@ -958,11 +979,10 @@ export default function CreateEditDeckPage() {
                               e.preventDefault();
                               handleSelectDefSuggestion(index, def);
                             }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition active:scale-95 flex items-center gap-1 ${
-                              isChosen
-                                ? 'bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-xs'
-                                : 'bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100 hover:border-amber-300'
-                            }`}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition active:scale-95 flex items-center gap-1 ${isChosen
+                              ? 'bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-xs'
+                              : 'bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100 hover:border-amber-300'
+                              }`}
                           >
                             <span>{def}</span>
                             {isChosen && <span className="text-[10px] text-emerald-600 font-bold">✓</span>}
