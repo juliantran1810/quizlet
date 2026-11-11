@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -17,21 +18,36 @@ import { deckService } from '../services/api';
 import CardItem from '../components/CardItem';
 import StreakBadge from '../components/StreakBadge';
 
+const CATEGORIES = [
+  { id: 'All', label: 'Tất cả' },
+  { id: 'Tiếng Trung', label: '🇨🇳 Tiếng Trung' },
+  { id: 'Tiếng Anh', label: '🇺🇸 Tiếng Anh' },
+  { id: 'HSK', label: '🀄 HSK' },
+  { id: 'Công nghệ', label: '💻 Công nghệ' },
+  { id: 'Y Dược', label: '🏥 Y Dược' },
+  { id: 'General', label: '📚 Chung' },
+];
+
 export default function HomeScreen({ navigation }) {
   const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState('public'); // 'public' | 'myDecks'
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [decks, setDecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadDecks = useCallback(async () => {
     try {
+      const params = {
+        search: search.trim() || undefined,
+        category: selectedCategory === 'All' ? undefined : selectedCategory,
+      };
       if (activeTab === 'myDecks') {
-        const res = await deckService.getMyDecks({ search: search.trim() });
+        const res = await deckService.getMyDecks(params);
         setDecks(res.data?.decks || []);
       } else {
-        const res = await deckService.getAll({ search: search.trim() });
+        const res = await deckService.getAll(params);
         setDecks(res.data?.decks || []);
       }
     } catch (err) {
@@ -40,7 +56,7 @@ export default function HomeScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [activeTab, search]);
+  }, [activeTab, search, selectedCategory]);
 
   useEffect(() => {
     setLoading(true);
@@ -168,6 +184,39 @@ export default function HomeScreen({ navigation }) {
               📁 Bộ Thẻ Của Tôi
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Category Filter Pills */}
+        <View style={styles.categoriesWrapper}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesContent}
+          >
+            {CATEGORIES.map((cat) => {
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <TouchableOpacity
+                  key={cat.id}
+                  activeOpacity={0.8}
+                  style={[
+                    styles.categoryPill,
+                    isSelected && styles.categoryPillActive,
+                  ]}
+                  onPress={() => setSelectedCategory(cat.id)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryPillText,
+                      isSelected && styles.categoryPillTextActive,
+                    ]}
+                  >
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         {/* Decks List */}
@@ -396,6 +445,38 @@ const styles = StyleSheet.create({
   tabBtnTextActive: {
     color: '#4F46E5',
     fontWeight: '800',
+  },
+  categoriesWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingVertical: 10,
+  },
+  categoriesContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+    flexDirection: 'row',
+  },
+  categoryPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  categoryPillActive: {
+    backgroundColor: '#4F46E5',
+    borderColor: '#4338CA',
+  },
+  categoryPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  categoryPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   listContent: {
     padding: 16,

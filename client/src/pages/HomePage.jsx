@@ -18,7 +18,18 @@ import {
   SpellCheck,
 } from 'lucide-react';
 
-const CATEGORIES = ['All', 'Tiếng Trung', 'Tiếng Anh', 'Công nghệ', 'Khoa học', 'Lịch sử', 'Y Dược', 'General'];
+const CATEGORIES = [
+  'All',
+  'Tiếng Trung',
+  'Tiếng Anh',
+  'Tiếng Nhật',
+  'Tiếng Hàn',
+  'Công nghệ',
+  'Khoa học',
+  'Lịch sử',
+  'Y Dược',
+  'General',
+];
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -33,9 +44,28 @@ export default function HomePage() {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchBoxRef = useRef(null);
 
+  const fetchDecks = async (searchTerm = search, cat = selectedCategory) => {
+    try {
+      setLoading(true);
+      const res = await deckService.getAll({
+        search: searchTerm.trim() || undefined,
+        category: cat === 'All' ? undefined : cat,
+      });
+      setDecks(res.data.decks || []);
+    } catch (err) {
+      console.error('Lỗi khi tải bộ thẻ:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Tự động tìm kiếm tức thì với Debounce 300ms khi gõ từ khóa hoặc chọn thể loại
   useEffect(() => {
-    fetchDecks();
-  }, [selectedCategory]);
+    const timer = setTimeout(() => {
+      fetchDecks(search, selectedCategory);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, selectedCategory]);
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -48,21 +78,6 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchDecks = async (searchTerm = search) => {
-    try {
-      setLoading(true);
-      const res = await deckService.getAll({
-        search: searchTerm,
-        category: selectedCategory === 'All' ? undefined : selectedCategory,
-      });
-      setDecks(res.data.decks || []);
-    } catch (err) {
-      console.error('Lỗi khi tải bộ thẻ:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSearchChange = (val) => {
     setSearch(val);
     const trimmed = val.trim().toLowerCase();
@@ -72,11 +87,18 @@ export default function HomePage() {
           (d) =>
             d.title.toLowerCase().includes(trimmed) ||
             (d.description && d.description.toLowerCase().includes(trimmed)) ||
-            (d.category && d.category.toLowerCase().includes(trimmed))
+            (d.category && d.category.toLowerCase().includes(trimmed)) ||
+            (d.cards &&
+              d.cards.some(
+                (c) =>
+                  (c.term && c.term.toLowerCase().includes(trimmed)) ||
+                  (c.definition && c.definition.toLowerCase().includes(trimmed)) ||
+                  (c.pinyin && c.pinyin.toLowerCase().includes(trimmed))
+              ))
         )
         .slice(0, 5);
       setSearchSuggestions(matched);
-      setShowSearchDropdown(true);
+      setShowSearchDropdown(matched.length > 0);
     } else {
       setSearchSuggestions([]);
       setShowSearchDropdown(false);
@@ -86,14 +108,14 @@ export default function HomePage() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setShowSearchDropdown(false);
-    fetchDecks(search);
+    fetchDecks(search, selectedCategory);
   };
 
   const handleClearSearch = () => {
     setSearch('');
     setSearchSuggestions([]);
     setShowSearchDropdown(false);
-    fetchDecks('');
+    fetchDecks('', selectedCategory);
   };
 
   // Lọc theo viewScope (Tất cả vs Bộ thẻ của tôi)

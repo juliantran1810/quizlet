@@ -202,14 +202,26 @@ export const getAllDecks = async (req, res) => {
     const { search, category, visibility, page = 1, limit = 20 } = req.query;
     let query = {};
 
-    if (category && category !== 'All') query.category = category;
+    if (category && category !== 'All') {
+      const cleanCat = category.replace(/[\p{Emoji}\p{Extended_Pictographic}\s]+/gu, ' ').trim();
+      const keyword = cleanCat || category.trim();
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.category = { $regex: escaped, $options: 'i' };
+    }
     if (visibility === 'public') query.isPublic = true;
     if (visibility === 'private') query.isPublic = false;
 
-    if (search) {
+    if (search && search.trim()) {
+      const trimmed = search.trim();
+      const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = { $regex: escaped, $options: 'i' };
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { title: searchRegex },
+        { description: searchRegex },
+        { category: searchRegex },
+        { 'cards.term': searchRegex },
+        { 'cards.definition': searchRegex },
+        { 'cards.pinyin': searchRegex },
       ];
     }
 

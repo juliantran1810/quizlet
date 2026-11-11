@@ -14,7 +14,8 @@ export default function CardItem({ deck, onPress }) {
   const cardCount = deck.cards?.length || 0;
   const authorName = deck.owner?.username || 'Ẩn danh';
   const authorAvatar = deck.owner?.avatar;
-  const categoryTheme = CATEGORY_COLORS[deck.category] || CATEGORY_COLORS.default;
+  const cleanCat = deck.category ? deck.category.replace(/[\p{Emoji}\p{Extended_Pictographic}\s]+/gu, ' ').trim() : '';
+  const categoryTheme = CATEGORY_COLORS[cleanCat] || CATEGORY_COLORS[deck.category] || CATEGORY_COLORS.default;
 
   return (
     <TouchableOpacity

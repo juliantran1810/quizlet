@@ -45,15 +45,31 @@ export const getDecks = async (req, res) => {
       }
     }
 
+    // 2. Lọc theo thể loại (Category)
+    // Hỗ trợ linh hoạt: Khớp regex không phân biệt hoa thường, tự động loại bỏ emoji để khớp cả 'Tiếng Trung' và '🇨🇳 Tiếng Trung'
     if (category && category !== 'All') {
-      query.category = category;
+      const cleanCat = category.replace(/[\p{Emoji}\p{Extended_Pictographic}\s]+/gu, ' ').trim();
+      const keyword = cleanCat || category.trim();
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.category = { $regex: escaped, $options: 'i' };
     }
 
-    if (search) {
+    // 3. Tìm kiếm toàn diện (Search)
+    // Hỗ trợ tìm kiếm theo Tiêu đề, Mô tả, Thể loại, và Từ vựng/Định nghĩa/Pinyin trong thẻ
+    if (search && search.trim()) {
+      const trimmed = search.trim();
+      const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = { $regex: escaped, $options: 'i' };
+
       const searchCondition = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { title: searchRegex },
+        { description: searchRegex },
+        { category: searchRegex },
+        { 'cards.term': searchRegex },
+        { 'cards.definition': searchRegex },
+        { 'cards.pinyin': searchRegex },
       ];
+
       if (query.$or) {
         query.$and = [
           { $or: query.$or },

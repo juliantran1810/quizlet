@@ -24,18 +24,18 @@ import {
 
 // ----- Danh sách gợi ý chủ đề -----
 const SUGGESTED_CATEGORIES = [
-  '🇨🇳 Tiếng Trung',
-  '🇺🇸 Tiếng Anh',
-  '🇯🇵 Tiếng Nhật',
-  '🇰🇷 Tiếng Hàn',
-  '🇫🇷 Tiếng Pháp',
-  '💻 Công nghệ',
-  '🔬 Khoa học',
-  '📜 Lịch sử',
-  '🏥 Y Dược',
-  '📐 Toán học',
-  '🎵 Âm nhạc',
-  '📚 General',
+  { label: '🇨🇳 Tiếng Trung', value: 'Tiếng Trung' },
+  { label: '🇺🇸 Tiếng Anh', value: 'Tiếng Anh' },
+  { label: '🇯🇵 Tiếng Nhật', value: 'Tiếng Nhật' },
+  { label: '🇰🇷 Tiếng Hàn', value: 'Tiếng Hàn' },
+  { label: '🇫🇷 Tiếng Pháp', value: 'Tiếng Pháp' },
+  { label: '💻 Công nghệ', value: 'Công nghệ' },
+  { label: '🔬 Khoa học', value: 'Khoa học' },
+  { label: '📜 Lịch sử', value: 'Lịch sử' },
+  { label: '🏥 Y Dược', value: 'Y Dược' },
+  { label: '📐 Toán học', value: 'Toán học' },
+  { label: '🎵 Âm nhạc', value: 'Âm nhạc' },
+  { label: '📚 General', value: 'General' },
 ];
 
 // ----- Helper: nhận diện chữ Hán -----
@@ -379,7 +379,7 @@ export default function CreateEditDeckPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('🇨🇳 Tiếng Trung');
+  const [category, setCategory] = useState('Tiếng Trung');
   const [categoryInput, setCategoryInput] = useState('');
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const categoryRef = useRef(null);
@@ -746,23 +746,25 @@ export default function CreateEditDeckPage() {
                   )}
                   <div className="max-h-52 overflow-y-auto">
                     {SUGGESTED_CATEGORIES.filter((c) =>
-                      !categoryInput.trim() || c.toLowerCase().includes(categoryInput.toLowerCase())
+                      !categoryInput.trim() ||
+                      c.label.toLowerCase().includes(categoryInput.toLowerCase()) ||
+                      c.value.toLowerCase().includes(categoryInput.toLowerCase())
                     ).map((cat) => (
                       <button
-                        key={cat}
+                        key={cat.value}
                         type="button"
                         onClick={() => {
-                          setCategory(cat);
+                          setCategory(cat.value);
                           setCategoryInput('');
                           setShowCategorySuggestions(false);
                         }}
                         className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition flex items-center gap-2 ${
-                          category === cat ? 'font-bold text-indigo-700 bg-indigo-50/50' : 'text-slate-700'
+                          category === cat.value ? 'font-bold text-indigo-700 bg-indigo-50/50' : 'text-slate-700'
                         }`}
                       >
-                        {cat}
-                        {category === cat && (
-                          <span className="ml-auto text-indigo-500 text-xs">✓ Đang chọn</span>
+                        <span>{cat.label}</span>
+                        {category === cat.value && (
+                          <span className="ml-auto text-indigo-500 text-xs font-semibold">✓ Đang chọn</span>
                         )}
                       </button>
                     ))}
