@@ -14,6 +14,7 @@ import CreateEditDeckPage from './pages/CreateEditDeckPage';
 import FlashcardStudyPage from './pages/FlashcardStudyPage';
 import QuizModePage from './pages/QuizModePage';
 import MatchGamePage from './pages/MatchGamePage';
+import GravityGamePage from './pages/GravityGamePage';
 import AdminPage from './pages/AdminPage';
 import ManageAccountPage from './pages/ManageAccountPage';
 import LearnModePage from './pages/LearnModePage';
@@ -76,6 +77,7 @@ function AppRoutes() {
           <Route path="/decks/:id/learn" element={<LearnModePage />} />
           <Route path="/decks/:id/quiz" element={<QuizModePage />} />
           <Route path="/decks/:id/match" element={<MatchGamePage />} />
+          <Route path="/decks/:id/gravity" element={<GravityGamePage />} />
 
           {/* Admin */}
           <Route

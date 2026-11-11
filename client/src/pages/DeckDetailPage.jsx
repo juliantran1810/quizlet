@@ -22,6 +22,7 @@ import {
   Star,
   Sparkles,
   SpellCheck,
+  Rocket,
 } from 'lucide-react';
 
 export default function DeckDetailPage() {
@@ -256,13 +257,13 @@ export default function DeckDetailPage() {
         )}
       </div>
 
-      {/* 4 Study Modes Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      {/* 5 Interactive Study & Game Modes Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 mb-10">
         <Link
           to={`/decks/${id}/flashcards`}
-          className="group p-5 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-md hover:shadow-indigo-200 hover:scale-[1.02] transition-all flex items-center gap-3.5"
+          className="group p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-md hover:shadow-indigo-200 hover:scale-[1.02] transition-all flex items-center gap-3.5"
         >
-          <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
             <Layers className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -273,27 +274,27 @@ export default function DeckDetailPage() {
 
         <Link
           to={`/decks/${id}/learn`}
-          className="group p-5 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md hover:shadow-emerald-200 hover:scale-[1.02] transition-all flex items-center gap-3.5 relative overflow-hidden"
+          className="group p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md hover:shadow-emerald-200 hover:scale-[1.02] transition-all flex items-center gap-3.5 relative overflow-hidden"
         >
           {dueCount > 0 && (
             <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 font-extrabold text-[10px] shadow">
               {dueCount} đến hạn
             </span>
           )}
-          <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
             <SpellCheck className="w-5 h-5 text-white" />
           </div>
           <div>
             <h3 className="font-bold text-sm">Luyện gõ từ</h3>
-            <p className="text-[11px] text-emerald-100 mt-0.5">Active Recall & Leitner</p>
+            <p className="text-[11px] text-emerald-100 mt-0.5">Active Recall</p>
           </div>
         </Link>
 
         <Link
           to={`/decks/${id}/quiz`}
-          className="group p-5 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 text-white shadow-md hover:shadow-purple-200 hover:scale-[1.02] transition-all flex items-center gap-3.5"
+          className="group p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 text-white shadow-md hover:shadow-purple-200 hover:scale-[1.02] transition-all flex items-center gap-3.5"
         >
-          <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
             <BrainCircuit className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -304,14 +305,27 @@ export default function DeckDetailPage() {
 
         <Link
           to={`/decks/${id}/match`}
-          className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md hover:shadow-amber-200 hover:scale-[1.02] transition-all flex items-center gap-3.5"
+          className="group p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md hover:shadow-amber-200 hover:scale-[1.02] transition-all flex items-center gap-3.5"
         >
-          <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
             <Gamepad2 className="w-5 h-5 text-white" />
           </div>
           <div>
             <h3 className="font-bold text-sm">Ghép từ</h3>
             <p className="text-[11px] text-amber-100 mt-0.5">Đua thời gian ghép cặp</p>
+          </div>
+        </Link>
+
+        <Link
+          to={`/decks/${id}/gravity`}
+          className="group p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-rose-500 via-orange-500 to-amber-600 text-white shadow-md hover:shadow-orange-200 hover:scale-[1.02] transition-all flex items-center gap-3.5 relative overflow-hidden"
+        >
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+            <Rocket className="w-5 h-5 text-white group-hover:animate-bounce" />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm">Trọng lực</h3>
+            <p className="text-[11px] text-orange-100 mt-0.5">Gõ chữ rơi arcade</p>
           </div>
         </Link>
       </div>
