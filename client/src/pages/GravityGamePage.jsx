@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { deckService } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useLanguage } from '../context/LanguageContext';
 import {
   ArrowLeft,
   Volume2,
@@ -26,8 +27,8 @@ import { sfx } from '../utils/sfx';
 // Cấu hình các cấp độ khó
 const DIFFICULTIES = {
   easy: {
-    label: 'Dễ (Thư giãn)',
-    description: 'Tốc độ rơi chậm, tối đa 1 từ cùng lúc, 5 mạng ❤️',
+    labelKey: 'gravity.diff_easy',
+    descKey: 'gravity.diff_easy_desc',
     speed: 0.18,
     speedInc: 0.015,
     maxWords: 1,
@@ -35,8 +36,8 @@ const DIFFICULTIES = {
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
   },
   medium: {
-    label: 'Vừa (Thử thách)',
-    description: 'Tốc độ vừa phải, tối đa 2 từ rơi so le, 4 mạng ❤️',
+    labelKey: 'gravity.diff_med',
+    descKey: 'gravity.diff_med_desc',
     speed: 0.28,
     speedInc: 0.025,
     maxWords: 2,
@@ -44,8 +45,8 @@ const DIFFICULTIES = {
     badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
   },
   hard: {
-    label: 'Khó (Chuyên gia)',
-    description: 'Tốc độ nhanh, tối đa 3 từ rơi dồn dập, 3 mạng ❤️',
+    labelKey: 'gravity.diff_hard',
+    descKey: 'gravity.diff_hard_desc',
     speed: 0.42,
     speedInc: 0.035,
     maxWords: 3,
@@ -95,6 +96,7 @@ function getValidAnswers(card, mode) {
 export default function GravityGamePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const [deck, setDeck] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -425,19 +427,19 @@ export default function GravityGamePage() {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Đang nạp trường trọng lực thiên thạch..." />;
+    return <LoadingSpinner message={t('common.loading')} />;
   }
 
   if (!deck || !deck.cards || deck.cards.length === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-24 text-center">
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Bộ thẻ chưa có dữ liệu</h2>
-        <p className="text-sm text-slate-500 mb-6">Hãy thêm thẻ từ vựng vào bộ thẻ để bắt đầu chơi.</p>
+        <h2 className="text-xl font-bold text-slate-800 mb-2">{t('deck.no_cards')}</h2>
+        <p className="text-sm text-slate-500 mb-6">{t('deck.description') || '...'}</p>
         <Link
           to={`/decks/${id}`}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold"
         >
-          <ArrowLeft className="w-4 h-4" /> Quay lại
+          <ArrowLeft className="w-4 h-4" /> {t('common.back')}
         </Link>
       </div>
     );
@@ -456,13 +458,13 @@ export default function GravityGamePage() {
               to={`/decks/${id}`}
               className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition"
             >
-              <ArrowLeft className="w-4 h-4" /> Thoát
+              <ArrowLeft className="w-4 h-4" /> {t('gravity.exit')}
             </Link>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsMuted(sfx.toggleMute())}
                 className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white transition"
-                title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+                title={isMuted ? t('gravity.sound_on') : t('gravity.sound_off')}
               >
                 {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
               </button>
@@ -474,17 +476,17 @@ export default function GravityGamePage() {
               <Rocket className="w-8 h-8 text-white animate-pulse" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mb-2">
-              Trọng Lực (Gravity)
+              {t('gravity.title')}
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
-              Bảo vệ hành tinh khỏi cơn mưa thiên thạch từ vựng! Gõ chính xác đáp án trước khi thiên thạch chạm mặt đất.
+              {t('gravity.subtitle')}
             </p>
           </div>
 
           {/* Chọn Độ Khó */}
           <div className="mb-6">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-              1. Chọn độ khó:
+              {t('gravity.diff_label')}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {Object.entries(DIFFICULTIES).map(([key, item]) => {
@@ -504,11 +506,11 @@ export default function GravityGamePage() {
                     }`}
                   >
                     <div className="font-extrabold text-xs mb-1 flex items-center justify-between">
-                      <span>{item.label}</span>
+                      <span>{t(item.labelKey)}</span>
                       {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />}
                     </div>
                     <div className="text-[10px] text-slate-400 leading-tight">
-                      {item.description}
+                      {t(item.descKey)}
                     </div>
                   </button>
                 );
@@ -519,7 +521,7 @@ export default function GravityGamePage() {
           {/* Chọn Chế Độ So Khớp */}
           <div className="mb-8">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-              2. Chế độ gõ từ:
+              {t('gravity.mode_label')}
             </label>
             <div className="space-y-2">
               <label
@@ -533,9 +535,9 @@ export default function GravityGamePage() {
                 <div className="flex items-center gap-3">
                   <Sparkles className="w-4 h-4 text-purple-400" />
                   <div>
-                    <div className="text-xs font-bold">Thông minh (Khuyên dùng)</div>
+                    <div className="text-xs font-bold">{t('gravity.mode_smart')}</div>
                     <div className="text-[10px] text-slate-400">
-                      Rơi chữ gốc kèm Pinyin. Chấp nhận gõ chữ Hán, Pinyin, hoặc nghĩa tiếng Việt!
+                      {t('gravity.mode_smart_desc')}
                     </div>
                   </div>
                 </div>
@@ -559,9 +561,9 @@ export default function GravityGamePage() {
                 <div className="flex items-center gap-3">
                   <Flame className="w-4 h-4 text-orange-400" />
                   <div>
-                    <div className="text-xs font-bold">Rơi Nghĩa → Gõ Thuật ngữ / Pinyin</div>
+                    <div className="text-xs font-bold">{t('gravity.mode_term')}</div>
                     <div className="text-[10px] text-slate-400">
-                      Luyện phản xạ nhớ chữ và phiên âm từ nghĩa tiếng Việt.
+                      {t('gravity.mode_term_desc')}
                     </div>
                   </div>
                 </div>
@@ -585,9 +587,9 @@ export default function GravityGamePage() {
                 <div className="flex items-center gap-3">
                   <HelpCircle className="w-4 h-4 text-emerald-400" />
                   <div>
-                    <div className="text-xs font-bold">Rơi Thuật ngữ → Gõ Nghĩa tiếng Việt</div>
+                    <div className="text-xs font-bold">{t('gravity.mode_def')}</div>
                     <div className="text-[10px] text-slate-400">
-                      Luyện phản xạ đọc hiểu nghĩa nhanh chóng.
+                      {t('gravity.mode_def_desc')}
                     </div>
                   </div>
                 </div>
@@ -607,7 +609,7 @@ export default function GravityGamePage() {
             onClick={startGame}
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 hover:from-rose-600 hover:via-orange-600 hover:to-amber-600 text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] border-b-4 border-orange-700"
           >
-            🚀 Bắt đầu chiến đấu ({deck.cards.length} thẻ từ)
+            {t('gravity.start_btn').replace('{count}', deck.cards.length)}
           </button>
         </div>
       </div>
@@ -627,19 +629,19 @@ export default function GravityGamePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              if (window.confirm('Bạn có muốn thoát trận đấu hiện tại?')) {
+              if (window.confirm(t('gravity.exit_confirm'))) {
                 setGameState('setup');
               }
             }}
             className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition"
-            title="Thoát"
+            title={t('gravity.exit')}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <span className="text-xs font-black text-white">{deck.title}</span>
             <div className="text-[10px] text-slate-400">
-              Cấp độ {level} • Còn {remainingCardsRef.current.length + activeMeteors.length} từ
+              {t('gravity.level')} {level} • {t('gravity.words_left').replace('{count}', remainingCardsRef.current.length + activeMeteors.length)}
             </div>
           </div>
         </div>
@@ -670,7 +672,7 @@ export default function GravityGamePage() {
 
           {/* Điểm số */}
           <div className="text-right">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Điểm</div>
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('gravity.score')}</div>
             <div className="text-sm sm:text-base font-black text-white">{score.toLocaleString()}</div>
           </div>
 
@@ -679,14 +681,14 @@ export default function GravityGamePage() {
             <button
               onClick={() => setIsPaused((prev) => !prev)}
               className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white transition"
-              title={isPaused ? 'Tiếp tục' : 'Tạm dừng'}
+              title={isPaused ? t('gravity.resume') : t('gravity.paused')}
             >
               {isPaused ? <Play className="w-4 h-4 text-emerald-400" /> : <Pause className="w-4 h-4" />}
             </button>
             <button
               onClick={() => setIsMuted(sfx.toggleMute())}
               className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white transition"
-              title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+              title={isMuted ? t('gravity.sound_on') : t('gravity.sound_off')}
             >
               {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
             </button>
@@ -699,7 +701,7 @@ export default function GravityGamePage() {
         {/* Vạch cảnh báo nguy hiểm gần đáy */}
         <div className="absolute bottom-[14%] left-0 right-0 h-1 border-t border-dashed border-rose-500/30 pointer-events-none flex items-center justify-end px-4">
           <span className="text-[9px] font-bold tracking-widest uppercase text-rose-500/40">
-            Khu vực phòng thủ
+            {t('gravity.defense_zone')}
           </span>
         </div>
 
@@ -749,13 +751,13 @@ export default function GravityGamePage() {
         {isPaused && (
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-30 flex items-center justify-center">
             <div className="text-center p-6 bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full mx-4 shadow-2xl">
-              <h2 className="text-xl font-black text-white mb-2">Đang tạm dừng</h2>
-              <p className="text-xs text-slate-400 mb-6">Trận đấu đang được giữ nguyên vị trí.</p>
+              <h2 className="text-xl font-black text-white mb-2">{t('gravity.paused_title')}</h2>
+              <p className="text-xs text-slate-400 mb-6">{t('gravity.paused_desc')}</p>
               <button
                 onClick={() => setIsPaused(false)}
                 className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider"
               >
-                Tiếp tục chơi
+                {t('gravity.resume_btn')}
               </button>
             </div>
           </div>
@@ -778,7 +780,7 @@ export default function GravityGamePage() {
                 type="text"
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
-                placeholder="Gõ đáp án vào đây rồi nhấn Enter để tiêu diệt..."
+                placeholder={t('gravity.type_here')}
                 disabled={isPaused || gameState !== 'playing'}
                 autoComplete="off"
                 autoCorrect="off"
@@ -792,7 +794,7 @@ export default function GravityGamePage() {
               disabled={!inputVal.trim() || isPaused || gameState !== 'playing'}
               className="px-5 sm:px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-indigo-500/20 transition-all active:scale-95 border-b-2 border-indigo-800 shrink-0"
             >
-              Bắn 🚀
+              {t('gravity.shoot')}
             </button>
           </form>
         </div>
@@ -808,20 +810,20 @@ export default function GravityGamePage() {
               <ShieldAlert className="w-6 h-6 animate-bounce" />
             </div>
             <h3 className="text-base font-black text-center text-white mb-1">
-              Thiên thạch đã va chạm mặt đất!
+              {t('gravity.recovery_title')}
             </h3>
             <p className="text-xs text-center text-slate-400 mb-4">
-              Bạn mất 1 mạng ❤️. Hãy gõ lại đáp án đúng của từ này để củng cố trí nhớ và tiếp tục phòng thủ:
+              {t('gravity.recovery_desc')}
             </p>
 
             {/* Thẻ gợi ý từ sai */}
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 mb-4 text-center">
-              <div className="text-xs text-slate-400 mb-1">Từ vựng cần gõ:</div>
+              <div className="text-xs text-slate-400 mb-1">{t('gravity.recovery_term_label')}</div>
               <div className="text-lg font-black text-amber-300 mb-1">{recoveryCard.term}</div>
               {recoveryCard.pinyin && (
                 <div className="text-xs text-indigo-300 mb-1">Pinyin: {recoveryCard.pinyin}</div>
               )}
-              <div className="text-xs text-slate-300">Nghĩa: {recoveryCard.definition}</div>
+              <div className="text-xs text-slate-300">{recoveryCard.definition}</div>
             </div>
 
             <form onSubmit={handleRecoverySubmit} className="space-y-3">
@@ -830,7 +832,7 @@ export default function GravityGamePage() {
                 type="text"
                 value={recoveryInput}
                 onChange={(e) => setRecoveryInput(e.target.value)}
-                placeholder="Nhập lại từ này vào đây..."
+                placeholder={t('gravity.recovery_input_ph')}
                 autoFocus
                 className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm font-semibold outline-none focus:border-rose-400"
               />
@@ -838,7 +840,7 @@ export default function GravityGamePage() {
                 type="submit"
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-500/20 hover:scale-[1.02] active:scale-95 transition"
               >
-                Xác nhận để chơi tiếp
+                {t('gravity.recovery_btn')}
               </button>
             </form>
           </div>
@@ -854,18 +856,18 @@ export default function GravityGamePage() {
             <div className="w-16 h-16 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-black text-white mb-1">Hết mạng rồi!</h2>
+            <h2 className="text-2xl font-black text-white mb-1">{t('gravity.game_over_title')}</h2>
             <p className="text-xs text-slate-400 mb-6">
-              Hành tinh đã bị tàn phá, nhưng bạn đã chiến đấu rất dũng cảm!
+              {t('gravity.game_over_desc')}
             </p>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-bold">Điểm đạt được</div>
+                <div className="text-[10px] text-slate-400 uppercase font-bold">{t('gravity.score_earned')}</div>
                 <div className="text-xl font-black text-white mt-1">{score.toLocaleString()}</div>
               </div>
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-bold">Chuỗi combo cao nhất</div>
+                <div className="text-[10px] text-slate-400 uppercase font-bold">{t('gravity.highest_combo')}</div>
                 <div className="text-xl font-black text-amber-400 mt-1">{maxCombo} x</div>
               </div>
             </div>
@@ -874,7 +876,7 @@ export default function GravityGamePage() {
             {missedCardsListRef.current.length > 0 && (
               <div className="mb-6 text-left">
                 <div className="text-[11px] font-bold text-slate-400 uppercase mb-2">
-                  Các từ đã bỏ lỡ ({missedCardsListRef.current.length}):
+                  {t('gravity.missed_words').replace('{count}', missedCardsListRef.current.length)}
                 </div>
                 <div className="max-h-32 overflow-y-auto space-y-1.5 p-2 rounded-xl bg-slate-950 border border-slate-800 text-xs">
                   {missedCardsListRef.current.map((c, i) => (
@@ -892,13 +894,13 @@ export default function GravityGamePage() {
                 onClick={startGame}
                 className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2"
               >
-                <RotateCcw className="w-4 h-4" /> Chơi lại ngay
+                <RotateCcw className="w-4 h-4" /> {t('gravity.restart')}
               </button>
               <button
                 onClick={() => setGameState('setup')}
                 className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
               >
-                Đổi cài đặt độ khó
+                {t('gravity.change_diff')}
               </button>
             </div>
           </div>
@@ -914,18 +916,18 @@ export default function GravityGamePage() {
             <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto mb-4 animate-bounce">
               <Trophy className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-black text-white mb-1">Bảo vệ thành công!</h2>
+            <h2 className="text-2xl font-black text-white mb-1">{t('gravity.victory_title')}</h2>
             <p className="text-xs text-slate-400 mb-6">
-              Bạn đã tiêu diệt toàn bộ thiên thạch trong bộ thẻ này một cách xuất sắc!
+              {t('gravity.victory_desc')}
             </p>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-bold">Tổng điểm</div>
+                <div className="text-[10px] text-slate-400 uppercase font-bold">{t('gravity.total_score')}</div>
                 <div className="text-xl font-black text-emerald-400 mt-1">{score.toLocaleString()}</div>
               </div>
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-bold">Combo cao nhất</div>
+                <div className="text-[10px] text-slate-400 uppercase font-bold">{t('gravity.highest_combo')}</div>
                 <div className="text-xl font-black text-amber-400 mt-1">{maxCombo} x</div>
               </div>
             </div>
@@ -935,13 +937,13 @@ export default function GravityGamePage() {
                 onClick={startGame}
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
               >
-                <RotateCcw className="w-4 h-4" /> Chơi lại thử thách
+                <RotateCcw className="w-4 h-4" /> {t('gravity.restart')}
               </button>
               <Link
                 to={`/decks/${id}`}
                 className="block w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
               >
-                Quay về bộ thẻ
+                {t('study.back_to_deck')}
               </Link>
             </div>
           </div>

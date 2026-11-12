@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { deckService, progressService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import Flashcard3D from '../components/Flashcard3D';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
@@ -23,6 +24,7 @@ export default function FlashcardStudyPage() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, updateUser } = useAuth();
+  const { t } = useLanguage();
 
   const [deck, setDeck] = useState(null);
   const [cards, setCards] = useState([]);
@@ -203,7 +205,7 @@ export default function FlashcardStudyPage() {
             to={`/decks/${id}`}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition"
           >
-            <ArrowLeft className="w-4 h-4" /> Thoát chế độ học
+            <ArrowLeft className="w-4 h-4" /> {t('flashcards.exit')}
           </Link>
 
           {/* Bộ lọc chế độ học: Tất cả vs Thẻ gắn sao */}
@@ -216,7 +218,7 @@ export default function FlashcardStudyPage() {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Tất cả ({allCards.length})
+              {t('flashcards.all_cards')} ({allCards.length})
             </button>
             <button
               onClick={() => handleFilterChange('starred')}
@@ -227,7 +229,7 @@ export default function FlashcardStudyPage() {
               }`}
             >
               <Star className={`w-3.5 h-3.5 ${starredCount > 0 ? 'fill-amber-400 text-amber-500' : ''}`} />
-              Thẻ gắn sao ({starredCount})
+              {t('flashcards.starred_cards')} ({starredCount})
             </button>
           </div>
 
@@ -235,11 +237,7 @@ export default function FlashcardStudyPage() {
             {/* Nút Đảo mặt thẻ */}
             <button
               onClick={handleToggleReversed}
-              title={
-                isReversed
-                  ? 'Đang đảo mặt: Đoán Thuật ngữ theo Định nghĩa (Bấm để quay về mặc định)'
-                  : 'Mặt trước là Thuật ngữ (Bấm để Đảo mặt thẻ đoán từ)'
-              }
+              title={isReversed ? t('flashcards.reverse_on') : t('flashcards.reverse')}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition ${
                 isReversed
                   ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
@@ -247,17 +245,13 @@ export default function FlashcardStudyPage() {
               }`}
             >
               <ArrowLeftRight className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{isReversed ? 'Đảo mặt: Bật' : 'Đảo mặt'}</span>
+              <span className="hidden sm:inline">{isReversed ? t('flashcards.reverse_on') : t('flashcards.reverse')}</span>
             </button>
 
             {/* Nút Tự động đọc Audio */}
             <button
               onClick={handleToggleAutoPlayAudio}
-              title={
-                autoPlayAudio
-                  ? 'Tự động phát âm khi chuyển/lật thẻ: Đang BẬT (Bấm để Tắt)'
-                  : 'Tự động phát âm khi chuyển/lật thẻ: Đang TẮT (Bấm để Bật)'
-              }
+              title={autoPlayAudio ? t('flashcards.auto_audio_on') : t('flashcards.auto_audio')}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition ${
                 autoPlayAudio
                   ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
@@ -265,7 +259,7 @@ export default function FlashcardStudyPage() {
               }`}
             >
               <Headphones className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{autoPlayAudio ? 'Tự đọc: Bật' : 'Tự đọc'}</span>
+              <span className="hidden sm:inline">{autoPlayAudio ? t('flashcards.auto_audio_on') : t('flashcards.auto_audio')}</span>
             </button>
 
             {/* Nút Bật/Tắt hiệu ứng âm thanh SFX */}
@@ -274,7 +268,7 @@ export default function FlashcardStudyPage() {
                 const next = sfx.toggleMute();
                 setIsMuted(next);
               }}
-              title={isMuted ? 'Bật hiệu ứng âm thanh' : 'Tắt hiệu ứng âm thanh'}
+              title={t('study.sound')}
               className={`p-2 rounded-xl border transition ${
                 isMuted
                   ? 'bg-rose-50 border-rose-200 text-rose-500 hover:bg-rose-100'
@@ -286,7 +280,7 @@ export default function FlashcardStudyPage() {
             <button
               onClick={handleShuffle}
               disabled={activeCards.length <= 1}
-              title="Xáo trộn thứ tự thẻ"
+              title={t('flashcards.shuffle')}
               className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition"
             >
               <Shuffle className="w-4 h-4" />
@@ -294,7 +288,7 @@ export default function FlashcardStudyPage() {
             <button
               onClick={handleRestart}
               disabled={activeCards.length === 0}
-              title="Bắt đầu lại từ đầu"
+              title={t('flashcards.restart')}
               className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition"
             >
               <RotateCcw className="w-4 h-4" />
@@ -307,14 +301,14 @@ export default function FlashcardStudyPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-2">
               <span>
-                Tiến độ ({filterMode === 'starred' ? 'Thẻ gắn sao' : 'Tất cả'}): {safeIndex + 1} / {activeCards.length} thẻ
+                {t('flashcards.progress')} ({filterMode === 'starred' ? t('flashcards.starred_cards') : t('flashcards.all_cards')}): {safeIndex + 1} / {activeCards.length} {t('deck.cards_count')}
               </span>
               <div className="flex items-center gap-3">
                 <span className="text-emerald-600 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> {masteredCount} Đã thuộc
+                  <CheckCircle2 className="w-3.5 h-3.5" /> {masteredCount} {t('flashcards.mastered')}
                 </span>
                 <span className="text-amber-600 flex items-center gap-1">
-                  <RotateCcw className="w-3.5 h-3.5" /> {learningCount} Đang học
+                  <RotateCcw className="w-3.5 h-3.5" /> {learningCount} {t('flashcards.learning')}
                 </span>
               </div>
             </div>
@@ -335,15 +329,15 @@ export default function FlashcardStudyPage() {
             <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-4">
               <Star className="w-8 h-8 fill-amber-400 text-amber-500" />
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2">Chưa có thẻ nào được gắn sao</h2>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">{t('flashcards.no_starred_title')}</h2>
             <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-              Hãy bấm vào biểu tượng ⭐ trên góc phải của các thẻ bạn thấy khó hoặc cần lưu ý để tập trung ôn tập riêng.
+              {t('flashcards.no_starred_desc')}
             </p>
             <button
               onClick={() => handleFilterChange('all')}
               className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 shadow-sm transition"
             >
-              Học tất cả {allCards.length} thẻ
+              {t('flashcards.study_all_btn').replace('{count}', allCards.length)}
             </button>
           </div>
         ) : completed ? (
@@ -352,22 +346,22 @@ export default function FlashcardStudyPage() {
               <Trophy className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-black text-slate-800 mb-2">
-              Chúc mừng bạn đã hoàn thành!
+              {t('flashcards.completed_title')}
             </h2>
             <p className="text-sm text-slate-500 mb-6">
-              Bạn đã lướt qua toàn bộ {activeCards.length} thẻ {filterMode === 'starred' ? 'gắn sao' : ''} trong phiên học này.
+              {t('flashcards.completed_desc').replace('{count}', activeCards.length)}
             </p>
 
             <div className="grid grid-cols-2 gap-4 mb-8">
               <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                 <span className="text-2xl font-black text-emerald-600">{masteredCount}</span>
-                <p className="text-xs font-semibold text-emerald-700 mt-1">Đã thuộc</p>
+                <p className="text-xs font-semibold text-emerald-700 mt-1">{t('flashcards.mastered')}</p>
               </div>
               <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
                 <span className="text-2xl font-black text-amber-600">
                   {activeCards.length - masteredCount}
                 </span>
-                <p className="text-xs font-semibold text-amber-700 mt-1">Cần ôn lại</p>
+                <p className="text-xs font-semibold text-amber-700 mt-1">{t('flashcards.need_review')}</p>
               </div>
             </div>
 
@@ -376,21 +370,21 @@ export default function FlashcardStudyPage() {
                 onClick={handleRestart}
                 className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition"
               >
-                Học lại lần nữa
+                {t('flashcards.study_again')}
               </button>
               {filterMode === 'starred' ? (
                 <button
                   onClick={() => handleFilterChange('all')}
                   className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm hover:bg-slate-200 transition"
                 >
-                  Học toàn bộ bộ thẻ ({allCards.length})
+                  {t('flashcards.study_all_btn').replace('{count}', allCards.length)}
                 </button>
               ) : (
                 <Link
                   to={`/decks/${id}/quiz`}
                   className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm hover:bg-slate-200 transition"
                 >
-                  Chuyển sang Trắc nghiệm
+                  {t('flashcards.switch_quiz')}
                 </Link>
               )}
             </div>
@@ -414,10 +408,10 @@ export default function FlashcardStudyPage() {
 
       {/* Keyboard Shortcut Hints Footer */}
       <div className="text-center text-xs text-slate-400 py-4 flex items-center justify-center gap-4 flex-wrap">
-        <span>💡 Phím tắt:</span>
-        <span><kbd className="px-1.5 py-0.5 bg-slate-200 rounded font-mono text-[10px] text-slate-700">Space</kbd> Lật thẻ</span>
-        <span><kbd className="px-1.5 py-0.5 bg-slate-200 rounded font-mono text-[10px] text-slate-700">←</kbd> Thẻ trước</span>
-        <span><kbd className="px-1.5 py-0.5 bg-slate-200 rounded font-mono text-[10px] text-slate-700">→</kbd> Thẻ tiếp</span>
+        <span>💡 {t('flashcards.shortcuts_hint')}</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-200 rounded font-mono text-[10px] text-slate-700">Space</kbd> {t('flashcards.shortcut_space')}</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-200 rounded font-mono text-[10px] text-slate-700">←</kbd> {t('flashcards.shortcut_prev')}</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-200 rounded font-mono text-[10px] text-slate-700">→</kbd> {t('flashcards.shortcut_next')}</span>
       </div>
     </div>
   );

@@ -15,8 +15,10 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { aiService } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ImageScanModal({ isOpen, onClose, onImport }) {
+  const { t } = useLanguage();
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('memora_gemini_key') || '');
@@ -65,7 +67,7 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
 
   const handleFileSelect = (file) => {
     if (!file || !file.type.startsWith('image/')) {
-      setError('Vui lòng chọn file hình ảnh hợp lệ (JPG, PNG, WEBP).');
+      setError(t('ai_scan.valid_img_err'));
       return;
     }
     setError('');
@@ -210,13 +212,13 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
             </div>
             <div>
               <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-1.5">
-                Quét từ vựng bằng AI Vision
+                {t('ai_scan.title')}
                 <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-100 text-indigo-700">
                   Gemini 1.5
                 </span>
               </h3>
               <p className="text-xs text-slate-500">
-                Tự động bóc tách chữ Hán, Pinyin và nghĩa tiếng Việt từ ảnh chụp sách
+                {t('ai_scan.subtitle')}
               </p>
             </div>
           </div>
@@ -244,7 +246,7 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 font-semibold text-rose-800 underline hover:text-rose-900"
                     >
-                      Nhận Gemini API Key miễn phí tại đây <ExternalLink className="w-3 h-3" />
+                      {t('ai_scan.get_free_key')} <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                 )}
@@ -281,11 +283,11 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
                   <div className="relative group max-h-56 overflow-hidden rounded-xl shadow-sm border border-slate-200">
                     <img
                       src={previewUrl}
-                      alt="Ảnh xem trước"
+                      alt="Preview"
                       className="max-h-56 object-contain rounded-xl"
                     />
                     <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 text-white text-xs font-semibold">
-                      <RefreshCw className="w-4 h-4" /> Bấm để chọn ảnh khác
+                      <RefreshCw className="w-4 h-4" /> {t('ai_scan.click_change_img')}
                     </div>
                   </div>
                 ) : (
@@ -295,10 +297,10 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
                     </div>
                     <div>
                       <p className="text-sm font-bold text-slate-800">
-                        Kéo thả ảnh vào đây, hoặc <span className="text-indigo-600">bấm để chọn ảnh</span>
+                        {t('ai_scan.drop_title')}
                       </p>
                       <p className="text-xs text-slate-400 mt-1">
-                        Hỗ trợ chụp từ camera, ảnh JPG, PNG, WEBP hoặc dán trực tiếp (<kbd className="font-mono px-1 bg-slate-200 rounded text-slate-700">Ctrl + V</kbd>)
+                        {t('ai_scan.drop_hint')}
                       </p>
                     </div>
                   </div>
@@ -310,20 +312,20 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
                 <div className="flex items-center justify-between text-xs">
                   <label className="font-semibold text-slate-700 flex items-center gap-1.5">
                     <Key className="w-3.5 h-3.5 text-indigo-600" />
-                    Google Gemini API Key (Tùy chọn)
+                    {t('ai_scan.gemini_key_label')}
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowKeyHelp(!showKeyHelp)}
                     className="text-slate-400 hover:text-indigo-600 flex items-center gap-1 text-[11px]"
                   >
-                    <HelpCircle className="w-3 h-3" /> {showKeyHelp ? 'Ẩn hướng dẫn' : 'Lấy key ở đâu?'}
+                    <HelpCircle className="w-3 h-3" /> {showKeyHelp ? t('ai_scan.hide_help') : t('ai_scan.show_help')}
                   </button>
                 </div>
 
                 <input
                   type="password"
-                  placeholder="AIzaSy... (Nếu server đã có key thì có thể để trống)"
+                  placeholder={t('ai_scan.key_ph')}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 font-mono"
@@ -331,11 +333,10 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
 
                 {showKeyHelp && (
                   <div className="text-[11px] text-slate-500 bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                    <p className="font-medium text-slate-700">Cách nhận Gemini API Key hoàn toàn miễn phí:</p>
                     <ol className="list-decimal list-inside space-y-0.5 text-slate-600">
-                      <li>Truy cập <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-600 font-semibold underline">Google AI Studio</a> và đăng nhập Google.</li>
-                      <li>Bấm nút <strong>Create API Key</strong> và sao chép mã khóa.</li>
-                      <li>Dán mã vào ô trên. Key sẽ được lưu an toàn trên trình duyệt của bạn.</li>
+                      <li>{t('ai_scan.help_step1')}</li>
+                      <li>{t('ai_scan.help_step2')}</li>
+                      <li>{t('ai_scan.help_step3')}</li>
                     </ol>
                   </div>
                 )}
@@ -347,14 +348,14 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
               <div className="flex items-center justify-between">
                 <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  Đã nhận diện thành công {scannedCards.length} từ vựng
+                  {t('ai_scan.recognized_count').replace('{count}', scannedCards.length)}
                 </div>
                 <button
                   type="button"
                   onClick={() => setStep('upload')}
                   className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"
                 >
-                  <RefreshCw className="w-3 h-3" /> Quét lại ảnh khác
+                  <RefreshCw className="w-3 h-3" /> {t('ai_scan.rescan')}
                 </button>
               </div>
 
@@ -372,7 +373,7 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
                         type="text"
                         value={card.term}
                         onChange={(e) => handleCardChange(idx, 'term', e.target.value)}
-                        placeholder="Thuật ngữ / Chữ Hán"
+                        placeholder={t('ai_scan.term_ph')}
                         className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 font-semibold text-slate-800 text-xs"
                       />
                     </div>
@@ -383,7 +384,7 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
                         type="text"
                         value={card.pinyin || ''}
                         onChange={(e) => handleCardChange(idx, 'pinyin', e.target.value)}
-                        placeholder="Pinyin (tuỳ chọn)"
+                        placeholder={t('ai_scan.pinyin_ph')}
                         className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 text-indigo-600 font-medium text-xs"
                       />
                     </div>
@@ -394,7 +395,7 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
                         type="text"
                         value={card.definition}
                         onChange={(e) => handleCardChange(idx, 'definition', e.target.value)}
-                        placeholder="Định nghĩa tiếng Việt"
+                        placeholder={t('ai_scan.def_ph')}
                         className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 text-slate-700 text-xs"
                       />
                     </div>
@@ -404,7 +405,7 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
                       type="button"
                       onClick={() => handleDeleteCard(idx)}
                       className="p-1.5 text-slate-400 hover:text-rose-600 transition shrink-0"
-                      title="Xóa thẻ này"
+                      title={t('create_deck.delete_card_tooltip')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -417,7 +418,7 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
                 onClick={handleAddBlankCard}
                 className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold py-1"
               >
-                <Plus className="w-3.5 h-3.5" /> Thêm một từ vựng mới
+                <Plus className="w-3.5 h-3.5" /> {t('ai_scan.add_blank_card')}
               </button>
             </div>
           )}
@@ -430,7 +431,7 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
             onClick={onClose}
             className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition"
           >
-            Hủy bỏ
+            {t('ai_scan.cancel')}
           </button>
 
           {step === 'upload' ? (
@@ -443,12 +444,12 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>AI đang phân tích trang sách (15-25s)...</span>
+                  <span>{t('ai_scan.analyzing')}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>Bắt đầu quét từ vựng</span>
+                  <span>{t('ai_scan.start_scan')}</span>
                 </>
               )}
             </button>
@@ -459,7 +460,7 @@ export default function ImageScanModal({ isOpen, onClose, onImport }) {
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-200 transition active:scale-95"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Thêm {scannedCards.length} từ vào bộ thẻ</span>
+              <span>{t('ai_scan.import_btn').replace('{count}', scannedCards.length)}</span>
             </button>
           )}
         </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { deckService, progressService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import HanziWriter from '../components/HanziWriter';
 import { speak } from '../utils/speech';
@@ -29,6 +30,7 @@ export default function DeckDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, formatCategory } = useLanguage();
 
   const [deck, setDeck] = useState(null);
   const [progress, setProgress] = useState(null);
@@ -164,7 +166,7 @@ export default function DeckDetailPage() {
           to="/"
           className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition"
         >
-          <ArrowLeft className="w-4 h-4" /> Về trang chủ
+          <ArrowLeft className="w-4 h-4" /> {t('common.back_to_home')}
         </Link>
 
         {isAuthor && (
@@ -173,14 +175,14 @@ export default function DeckDetailPage() {
               to={`/decks/${id}/edit`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
             >
-              <Edit className="w-3.5 h-3.5" /> Chỉnh sửa
+              <Edit className="w-3.5 h-3.5" /> {t('common.edit')}
             </Link>
             <button
               onClick={handleDelete}
               disabled={deleting}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-200 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Xóa bộ
+              <Trash2 className="w-3.5 h-3.5" /> {t('deck.delete_deck')}
             </button>
           </div>
         )}
@@ -190,15 +192,15 @@ export default function DeckDetailPage() {
       <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 mb-8 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-semibold text-xs">
-            {deck.category || 'General'}
+            {formatCategory(deck.category)}
           </span>
           <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold text-xs">
-            {totalCards} thẻ thuật ngữ
+            {totalCards} {t('deck.cards_count')}
           </span>
           {starredCount > 0 && (
             <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold text-xs flex items-center gap-1 border border-amber-200">
               <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
-              {starredCount} thẻ gắn sao
+              {starredCount} {t('deck.starred_count')}
             </span>
           )}
           <span
@@ -209,10 +211,10 @@ export default function DeckDetailPage() {
             }`}
           >
             {deck.isPublic ? <Globe className="w-3 h-3 text-emerald-600" /> : <Lock className="w-3 h-3 text-amber-600" />}
-            {deck.isPublic ? 'Công khai' : 'Riêng tư'}
+            {deck.isPublic ? t('deck.public') : t('deck.private')}
           </span>
           <span className="text-xs text-slate-400">
-            Tạo bởi <strong className="text-slate-600">{deck.author?.username || 'Ẩn danh'}</strong>
+            {t('deck.created_by')} <strong className="text-slate-600">{deck.author?.username || 'Memora'}</strong>
           </span>
         </div>
 
@@ -229,20 +231,20 @@ export default function DeckDetailPage() {
         {user && (
           <div className="mt-6 pt-6 border-t border-slate-100">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold mb-2">
-              <span className="text-slate-600">Tiến độ ghi nhớ: {progressPercent}%</span>
+              <span className="text-slate-600">{t('deck.progress_label')}: {progressPercent}%</span>
               <div className="flex items-center gap-4 flex-wrap">
                 <span className="text-emerald-600 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> {masteredCount} Đã thuộc
+                  <CheckCircle2 className="w-3.5 h-3.5" /> {masteredCount} {t('deck.mastered')}
                 </span>
                 <span className="text-amber-600 flex items-center gap-1">
-                  <RotateCcw className="w-3.5 h-3.5" /> {totalCards - masteredCount} Cần ôn
+                  <RotateCcw className="w-3.5 h-3.5" /> {totalCards - masteredCount} {t('deck.need_review')}
                 </span>
                 {masteredCount > 0 && (
                   <button
                     onClick={handleResetProgress}
                     className="text-slate-400 hover:text-rose-500 text-[11px] underline"
                   >
-                    Đặt lại
+                    {t('deck.reset_progress')}
                   </button>
                 )}
               </div>
@@ -267,8 +269,8 @@ export default function DeckDetailPage() {
             <Layers className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-sm">Thẻ ghi nhớ</h3>
-            <p className="text-[11px] text-indigo-100 mt-0.5">Lật thẻ 3D & audio</p>
+            <h3 className="font-bold text-sm">{t('deck.mode_flashcards')}</h3>
+            <p className="text-[11px] text-indigo-100 mt-0.5">{t('deck.mode_flashcards_desc')}</p>
           </div>
         </Link>
 
@@ -278,15 +280,15 @@ export default function DeckDetailPage() {
         >
           {dueCount > 0 && (
             <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 font-extrabold text-[10px] shadow">
-              {dueCount} đến hạn
+              {dueCount} {t('deck.due_badge')}
             </span>
           )}
           <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
             <SpellCheck className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-sm">Luyện gõ từ</h3>
-            <p className="text-[11px] text-emerald-100 mt-0.5">Active Recall</p>
+            <h3 className="font-bold text-sm">{t('deck.mode_learn')}</h3>
+            <p className="text-[11px] text-emerald-100 mt-0.5">{t('deck.mode_learn_desc')}</p>
           </div>
         </Link>
 
@@ -298,8 +300,8 @@ export default function DeckDetailPage() {
             <BrainCircuit className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-sm">Trắc nghiệm</h3>
-            <p className="text-[11px] text-purple-100 mt-0.5">4 đáp án thông minh</p>
+            <h3 className="font-bold text-sm">{t('deck.mode_quiz')}</h3>
+            <p className="text-[11px] text-purple-100 mt-0.5">{t('deck.mode_quiz_desc')}</p>
           </div>
         </Link>
 
@@ -311,8 +313,8 @@ export default function DeckDetailPage() {
             <Gamepad2 className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-sm">Ghép từ</h3>
-            <p className="text-[11px] text-amber-100 mt-0.5">Đua thời gian ghép cặp</p>
+            <h3 className="font-bold text-sm">{t('deck.mode_match')}</h3>
+            <p className="text-[11px] text-amber-100 mt-0.5">{t('deck.mode_match_desc')}</p>
           </div>
         </Link>
 
@@ -324,8 +326,8 @@ export default function DeckDetailPage() {
             <Rocket className="w-5 h-5 text-white group-hover:animate-bounce" />
           </div>
           <div>
-            <h3 className="font-bold text-sm">Trọng lực</h3>
-            <p className="text-[11px] text-orange-100 mt-0.5">Gõ chữ rơi arcade</p>
+            <h3 className="font-bold text-sm">{t('deck.mode_gravity')}</h3>
+            <p className="text-[11px] text-orange-100 mt-0.5">{t('deck.mode_gravity_desc')}</p>
           </div>
         </Link>
       </div>
@@ -339,10 +341,10 @@ export default function DeckDetailPage() {
             </div>
             <div>
               <h4 className="font-bold text-amber-950 text-sm">
-                Bạn có {starredCount} thẻ từ vựng đã gắn sao
+                {t('deck.starred_banner_title').replace('{count}', starredCount)}
               </h4>
               <p className="text-xs text-amber-800">
-                Lọc và tập trung ôn lại các thẻ bạn thấy khó trong chế độ Thẻ ghi nhớ.
+                {t('deck.starred_banner_desc')}
               </p>
             </div>
           </div>
@@ -350,7 +352,7 @@ export default function DeckDetailPage() {
             to={`/decks/${id}/flashcards?mode=starred`}
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap self-stretch sm:self-auto justify-center"
           >
-            <Star className="w-3.5 h-3.5 fill-white" /> Ôn luyện {starredCount} thẻ gắn sao →
+            <Star className="w-3.5 h-3.5 fill-white" /> {t('deck.study_starred_btn').replace('{count}', starredCount)}
           </Link>
         </div>
       )}
@@ -359,14 +361,14 @@ export default function DeckDetailPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            Các thẻ trong bộ này ({totalCards})
+            {t('deck.card_list_title')} ({totalCards})
           </h2>
           {starredCount > 0 && (
             <Link
               to={`/decks/${id}/flashcards?mode=starred`}
               className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1"
             >
-              <Star className="w-3.5 h-3.5 fill-amber-400" /> Xem {starredCount} thẻ gắn sao
+              <Star className="w-3.5 h-3.5 fill-amber-400" /> {starredCount} {t('deck.starred_count')}
             </Link>
           )}
         </div>

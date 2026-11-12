@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { deckService, authService } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
@@ -31,6 +32,7 @@ import {
 
 export default function ManageAccountPage() {
   const { user, updateUser } = useAuth();
+  const { language, setLanguage, languages, t, formatCategory } = useLanguage();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('decks'); // 'decks' | 'settings'
@@ -293,19 +295,19 @@ export default function ManageAccountPage() {
 
               <div className="px-4 py-3 rounded-2xl bg-indigo-50 border border-indigo-100 text-center min-w-[90px]">
                 <div className="text-xl font-black text-indigo-700">{decks.length}</div>
-                <div className="text-[11px] font-semibold text-indigo-600">Bộ thẻ</div>
+                <div className="text-[11px] font-semibold text-indigo-600">{t('nav.my_decks')}</div>
               </div>
               <div className="px-4 py-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-center min-w-[90px]">
                 <div className="text-xl font-black text-emerald-700">{publicCount}</div>
-                <div className="text-[11px] font-semibold text-emerald-600">🌍 Công khai</div>
+                <div className="text-[11px] font-semibold text-emerald-600">🌍 {t('deck.public')}</div>
               </div>
               <div className="px-4 py-3 rounded-2xl bg-amber-50 border border-amber-100 text-center min-w-[90px]">
                 <div className="text-xl font-black text-amber-700">{privateCount}</div>
-                <div className="text-[11px] font-semibold text-amber-600">🔒 Riêng tư</div>
+                <div className="text-[11px] font-semibold text-amber-600">🔒 {t('deck.private')}</div>
               </div>
               <div className="px-4 py-3 rounded-2xl bg-slate-100 border border-slate-200 text-center min-w-[90px]">
                 <div className="text-xl font-black text-slate-700">{totalCards}</div>
-                <div className="text-[11px] font-semibold text-slate-600">Tổng số thẻ</div>
+                <div className="text-[11px] font-semibold text-slate-600">{t('deck.cards_count')}</div>
               </div>
             </div>
           </div>
@@ -322,7 +324,7 @@ export default function ManageAccountPage() {
             }`}
           >
             <Layers className="w-4 h-4" />
-            Bộ thẻ của tôi ({decks.length})
+            {t('account.decks_tab')} ({decks.length})
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -333,7 +335,7 @@ export default function ManageAccountPage() {
             }`}
           >
             <KeyRound className="w-4 h-4" />
-            Cài đặt & Bảo mật
+            {t('account.security_tab')}
           </button>
         </div>
 
@@ -346,7 +348,7 @@ export default function ManageAccountPage() {
                 <Search className="w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Tìm trong bộ thẻ của bạn..."
+                  placeholder={t('home.search_placeholder')}
                   value={searchDeck}
                   onChange={(e) => setSearchDeck(e.target.value)}
                   className="w-full text-xs sm:text-sm focus:outline-none text-slate-800"
@@ -363,7 +365,7 @@ export default function ManageAccountPage() {
                         : 'hover:text-slate-900'
                     }`}
                   >
-                    Tất cả ({decks.length})
+                    {t('home.all_scope')} ({decks.length})
                   </button>
                   <button
                     onClick={() => setVisibilityFilter('public')}
@@ -373,7 +375,7 @@ export default function ManageAccountPage() {
                         : 'hover:text-slate-900'
                     }`}
                   >
-                    🌍 Công khai ({publicCount})
+                    🌍 {t('deck.public')} ({publicCount})
                   </button>
                   <button
                     onClick={() => setVisibilityFilter('private')}
@@ -383,7 +385,7 @@ export default function ManageAccountPage() {
                         : 'hover:text-slate-900'
                     }`}
                   >
-                    🔒 Riêng tư ({privateCount})
+                    🔒 {t('deck.private')} ({privateCount})
                   </button>
                 </div>
 
@@ -392,7 +394,7 @@ export default function ManageAccountPage() {
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 shadow-sm transition active:scale-95 shrink-0"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Tạo bộ mới</span>
+                  <span>{t('home.create_first_deck')}</span>
                 </Link>
               </div>
             </div>
@@ -427,14 +429,14 @@ export default function ManageAccountPage() {
                       {/* Badge Top Header */}
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <span className="px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs">
-                          {deck.category || 'General'}
+                          {formatCategory(deck.category)}
                         </span>
 
                         {/* Status Badge + Quick Toggle Button */}
                         <button
                           type="button"
                           onClick={() => handleToggleVisibility(deck._id, deck.isPublic)}
-                          title="Bấm để chuyển đổi trạng thái Công khai / Riêng tư"
+                          title={`${t('deck.public')} / ${t('deck.private')}`}
                           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold border transition ${
                             deck.isPublic
                               ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
@@ -444,12 +446,12 @@ export default function ManageAccountPage() {
                           {deck.isPublic ? (
                             <>
                               <Globe className="w-3 h-3 text-emerald-600" />
-                              <span>Công khai</span>
+                              <span>{t('deck.public')}</span>
                             </>
                           ) : (
                             <>
                               <Lock className="w-3 h-3 text-amber-600" />
-                              <span>Riêng tư</span>
+                              <span>{t('deck.private')}</span>
                             </>
                           )}
                         </button>
@@ -462,12 +464,12 @@ export default function ManageAccountPage() {
                       </Link>
 
                       <p className="text-xs text-slate-500 mt-1 line-clamp-2 min-h-[32px]">
-                        {deck.description || 'Không có mô tả chi tiết.'}
+                        {deck.description || t('home.no_description')}
                       </p>
 
                       <div className="mt-3 text-xs text-slate-400 font-semibold flex items-center gap-1">
                         <Layers className="w-3.5 h-3.5" />
-                        <span>{deck.cards?.length || 0} thẻ thuật ngữ</span>
+                        <span>{deck.cards?.length || 0} {t('deck.terms_count')}</span>
                       </div>
                     </div>
 
@@ -477,21 +479,21 @@ export default function ManageAccountPage() {
                       <div className="flex items-center gap-1">
                         <Link
                           to={`/decks/${deck._id}/flashcards`}
-                          title="Lật thẻ 3D"
+                          title={t('deck.mode_flashcards')}
                           className="p-1.5 rounded-lg text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 transition"
                         >
                           <Layers className="w-4 h-4" />
                         </Link>
                         <Link
                           to={`/decks/${deck._id}/quiz`}
-                          title="Trắc nghiệm"
+                          title={t('deck.mode_quiz')}
                           className="p-1.5 rounded-lg text-slate-500 hover:bg-purple-50 hover:text-purple-600 transition"
                         >
                           <BrainCircuit className="w-4 h-4" />
                         </Link>
                         <Link
                           to={`/decks/${deck._id}/match`}
-                          title="Ghép từ"
+                          title={t('deck.mode_match')}
                           className="p-1.5 rounded-lg text-slate-500 hover:bg-amber-50 hover:text-amber-600 transition"
                         >
                           <Gamepad2 className="w-4 h-4" />
@@ -502,7 +504,7 @@ export default function ManageAccountPage() {
                       <div className="flex items-center gap-1">
                         <Link
                           to={`/decks/${deck._id}/edit`}
-                          title="Chỉnh sửa bộ thẻ"
+                          title={t('common.edit')}
                           className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition"
                         >
                           <Edit className="w-4 h-4" />
@@ -510,7 +512,7 @@ export default function ManageAccountPage() {
                         <button
                           type="button"
                           onClick={() => handleDeleteDeck(deck._id, deck.title)}
-                          title="Xóa bộ thẻ"
+                          title={t('deck.delete_deck')}
                           className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -531,10 +533,10 @@ export default function ManageAccountPage() {
             <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
               <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-2">
                 <User className="w-5 h-5 text-indigo-600" />
-                Thông tin cá nhân
+                {t('account.profile_title')}
               </h2>
               <p className="text-xs text-slate-400 mb-6">
-                Cập nhật tên người dùng hiển thị và địa chỉ email đăng nhập
+                {t('account.profile_subtitle')}
               </p>
 
               {profileMsg.text && (
@@ -558,7 +560,7 @@ export default function ManageAccountPage() {
                 {/* Khu vực chọn Avatar */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                    Ảnh đại diện (Avatar)
+                    {t('account.avatar_label')}
                   </label>
                   
                   <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
@@ -574,7 +576,7 @@ export default function ManageAccountPage() {
                       <label
                         htmlFor="avatar-file-input"
                         className="absolute -bottom-1 -right-1 p-1.5 rounded-xl bg-indigo-600 text-white shadow-md hover:bg-indigo-700 cursor-pointer transition"
-                        title="Tải ảnh từ máy tính"
+                        title={t('account.upload_avatar')}
                       >
                         <Camera className="w-3.5 h-3.5" />
                         <input
@@ -590,7 +592,7 @@ export default function ManageAccountPage() {
                     {/* Bộ sưu tập Avatar hoạt hình độc đáo */}
                     <div className="flex-1">
                       <span className="text-xs font-bold text-slate-500 block mb-2">
-                        Hoặc chọn một hình mẫu sinh động:
+                        {t('account.choose_preset')}
                       </span>
                       <div className="flex flex-wrap gap-2">
                         {PRESET_AVATARS.map((url, idx) => (
@@ -613,7 +615,7 @@ export default function ManageAccountPage() {
                             onClick={() => setAvatar('')}
                             className="px-2 py-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700 underline self-center"
                           >
-                            Xóa ảnh
+                            {t('account.delete_avatar')}
                           </button>
                         )}
                       </div>
@@ -622,7 +624,7 @@ export default function ManageAccountPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Tên người dùng (Username)
+                    {t('account.username')}
                   </label>
                   <input
                     type="text"
@@ -635,7 +637,7 @@ export default function ManageAccountPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Địa chỉ Email
+                    {t('account.email')}
                   </label>
                   <input
                     type="email"
@@ -652,7 +654,7 @@ export default function ManageAccountPage() {
                     disabled={profileSaving}
                     className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition disabled:opacity-50 shadow-sm"
                   >
-                    {profileSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
+                    {profileSaving ? t('account.saving') : t('account.save_changes')}
                   </button>
                 </div>
               </form>
@@ -662,10 +664,10 @@ export default function ManageAccountPage() {
             <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
               <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-2">
                 <KeyRound className="w-5 h-5 text-amber-600" />
-                Đổi mật khẩu bảo mật
+                {t('account.password_title')}
               </h2>
               <p className="text-xs text-slate-400 mb-6">
-                Đặt mật khẩu mạnh có ít nhất 6 ký tự để bảo vệ tài khoản
+                {t('account.password_subtitle')}
               </p>
 
               {passwordMsg.text && (
@@ -688,7 +690,7 @@ export default function ManageAccountPage() {
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Mật khẩu hiện tại
+                    {t('account.current_password')}
                   </label>
                   <div className="relative">
                     <input
@@ -711,7 +713,7 @@ export default function ManageAccountPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Mật khẩu mới (tối thiểu 6 ký tự)
+                    {t('account.new_password')}
                   </label>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -725,7 +727,7 @@ export default function ManageAccountPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Xác nhận mật khẩu mới
+                    {t('account.confirm_password')}
                   </label>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -743,10 +745,54 @@ export default function ManageAccountPage() {
                     disabled={passwordSaving}
                     className="px-5 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 transition disabled:opacity-50 shadow-sm"
                   >
-                    {passwordSaving ? 'Đang cập nhật...' : 'Đổi mật khẩu'}
+                    {passwordSaving ? t('account.updating') : t('account.update_password')}
                   </button>
                 </div>
               </form>
+            </div>
+
+            {/* Form 3: Cài đặt Ngôn ngữ Hệ thống */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs md:col-span-2">
+              <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-2">
+                <Globe className="w-5 h-5 text-indigo-600" />
+                {t('account.language_setting')}
+              </h2>
+              <p className="text-xs text-slate-400 mb-6">
+                {t('account.language_desc')}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {languages.map((item) => {
+                  const isSelected = item.code === language;
+                  return (
+                    <button
+                      key={item.code}
+                      type="button"
+                      onClick={() => setLanguage(item.code)}
+                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left ${
+                        isSelected
+                          ? 'border-indigo-600 bg-indigo-50/50 shadow-sm'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{item.flag}</span>
+                        <div>
+                          <div className={`text-sm font-extrabold ${isSelected ? 'text-indigo-900' : 'text-slate-800'}`}>
+                            {item.name}
+                          </div>
+                          <div className="text-[11px] text-slate-400">
+                            {item.label}
+                          </div>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle2 className="w-5 h-5 text-indigo-600 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

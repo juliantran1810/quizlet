@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { deckService } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
   ArrowLeft,
@@ -17,6 +18,7 @@ import { sfx } from '../utils/sfx';
 
 export default function MatchGamePage() {
   const { id } = useParams();
+  const { t } = useLanguage();
   const [deck, setDeck] = useState(null);
   const [tiles, setTiles] = useState([]);
   const [selectedTile, setSelectedTile] = useState(null);
@@ -164,7 +166,7 @@ export default function MatchGamePage() {
             to={`/decks/${id}`}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition"
           >
-            <ArrowLeft className="w-4 h-4" /> Thoát Game
+            <ArrowLeft className="w-4 h-4" /> {t('flashcards.exit')}
           </Link>
 
           {/* Realtime Timer Badge */}
@@ -179,7 +181,7 @@ export default function MatchGamePage() {
                 const next = sfx.toggleMute();
                 setIsMuted(next);
               }}
-              title={isMuted ? "Bật hiệu ứng âm thanh" : "Tắt hiệu ứng âm thanh"}
+              title={t('study.sound')}
               className={`p-2 rounded-xl border transition ${
                 isMuted
                   ? 'bg-rose-50 border-rose-200 text-rose-500 hover:bg-rose-100'
@@ -193,7 +195,7 @@ export default function MatchGamePage() {
                 sfx.slide();
                 setupGameTiles(deck.cards);
               }}
-              title="Chơi ván mới"
+              title={t('match.play_again')}
               className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
             >
               <RotateCcw className="w-4 h-4" />
@@ -204,10 +206,10 @@ export default function MatchGamePage() {
         <div className="text-center mb-6">
           <h1 className="text-2xl font-black text-slate-800 flex items-center justify-center gap-2">
             <Zap className="w-6 h-6 text-amber-500" />
-            Ghép Từ Nhanh (Match Game)
+            {t('match.title')}
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Chọn một cặp Thẻ Thuật ngữ & Thẻ Định nghĩa tương ứng càng nhanh càng tốt!
+            {t('match.subtitle')}
           </p>
         </div>
       </div>
@@ -220,15 +222,15 @@ export default function MatchGamePage() {
               <Trophy className="w-8 h-8" />
             </div>
 
-            <h2 className="text-2xl font-black text-slate-800 mb-1">Thành tích tuyệt vời!</h2>
-            <p className="text-sm text-slate-500 mb-6">Bạn đã ghép chính xác tất cả các cặp từ vựng.</p>
+            <h2 className="text-2xl font-black text-slate-800 mb-1">{t('match.completed_title')}</h2>
+            <p className="text-sm text-slate-500 mb-6">{t('match.completed_desc')}</p>
 
             <div className="p-6 bg-gradient-to-tr from-amber-50 to-orange-50 rounded-2xl border border-amber-200/80 mb-6">
               <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
-                Thời gian hoàn thành:
+                {t('match.timer_label')}
               </span>
               <div className="text-4xl font-black text-amber-600 font-mono mt-1">
-                {formattedTime} giây
+                {formattedTime} {t('match.seconds')}
               </div>
             </div>
 
@@ -237,13 +239,13 @@ export default function MatchGamePage() {
                 onClick={() => setupGameTiles(deck.cards)}
                 className="px-6 py-2.5 rounded-xl bg-amber-500 text-white font-semibold text-sm hover:bg-amber-600 transition flex items-center gap-2"
               >
-                <RotateCcw className="w-4 h-4" /> Chơi lại ván mới
+                <RotateCcw className="w-4 h-4" /> {t('match.play_again')}
               </button>
               <Link
                 to={`/decks/${id}`}
                 className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm hover:bg-slate-200 transition"
               >
-                Quay lại bộ thẻ
+                {t('match.back_to_deck')}
               </Link>
             </div>
           </div>
@@ -283,7 +285,7 @@ export default function MatchGamePage() {
       </div>
 
       <div className="text-center text-xs text-slate-400 py-2">
-        Thời gian đang đếm realtime • Ghép chuẩn xác để xóa sạch bảng
+        {t('match.realtime_hint')}
       </div>
     </div>
   );

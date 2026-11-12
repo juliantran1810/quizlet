@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageSelector from './LanguageSelector';
 import {
   Sparkles,
   PlusCircle,
@@ -20,6 +22,7 @@ import {
 
 export default function Navbar() {
   const { user, loading, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -53,7 +56,7 @@ export default function Navbar() {
               </span>
             </div>
             <p className="text-[11px] text-slate-400 font-medium -mt-1 hidden sm:block">
-              Học thông minh qua Flashcard
+              {t('nav.slogan')}
             </p>
           </div>
         </Link>
@@ -65,10 +68,10 @@ export default function Navbar() {
               <Link
                 to="/account"
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition"
-                title="Quản lý bộ thẻ của tôi"
+                title={t('nav.my_decks')}
               >
                 <Layers className="w-4 h-4 text-indigo-600" />
-                <span>Bộ thẻ của tôi</span>
+                <span>{t('nav.my_decks')}</span>
               </Link>
 
               <Link
@@ -76,7 +79,7 @@ export default function Navbar() {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition active:scale-95"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>Tạo bộ thẻ</span>
+                <span>{t('nav.create_deck')}</span>
               </Link>
 
               {/* Admin button — chỉ hiển thị cho admin */}
@@ -87,13 +90,16 @@ export default function Navbar() {
                   title="Admin Workbench"
                 >
                   <Shield className="w-4 h-4" />
-                  <span>Admin</span>
+                  <span>{t('nav.admin')}</span>
                 </Link>
               )}
 
               <div className="h-6 w-px bg-slate-200 mx-1" />
 
               <div className="flex items-center gap-2">
+                {/* Language Selector */}
+                <LanguageSelector />
+
                 {/* Daily Streak Flame Badge */}
                 <Link
                   to="/account"
@@ -102,7 +108,7 @@ export default function Navbar() {
                       ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-orange-200 text-orange-600 hover:scale-105'
                       : 'bg-slate-50 border-slate-200 text-slate-400'
                   }`}
-                  title={`Chuỗi học tập liên tục: ${user.streakCount || 0} ngày`}
+                  title={`${t('nav.streak_tooltip')}: ${user.streakCount || 0}`}
                 >
                   <Flame
                     className={`w-4 h-4 ${
@@ -117,7 +123,7 @@ export default function Navbar() {
                 <Link
                   to="/account"
                   className="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-slate-100 transition group"
-                  title="Quản lý tài khoản"
+                  title={t('nav.account_settings')}
                 >
                   <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition-transform overflow-hidden">
                     {user.avatar ? (
@@ -133,7 +139,7 @@ export default function Navbar() {
 
                 <button
                   onClick={handleLogout}
-                  title="Đăng xuất"
+                  title={t('nav.logout')}
                   className="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition"
                 >
                   <LogOut className="w-4 h-4" />
@@ -144,17 +150,18 @@ export default function Navbar() {
             <div className="w-24 h-8 bg-slate-100 rounded-xl animate-pulse" />
           ) : (
             <div className="flex items-center gap-2">
+              <LanguageSelector />
               <Link
                 to="/login"
                 className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition"
               >
-                Đăng nhập
+                {t('nav.login')}
               </Link>
               <Link
                 to="/register"
                 className="px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-sm transition"
               >
-                Đăng ký
+                {t('nav.register')}
               </Link>
             </div>
           )}
@@ -162,6 +169,9 @@ export default function Navbar() {
 
         {/* Mobile Action Controls (< md screens) */}
         <div className="flex md:hidden items-center gap-2">
+          {/* Mobile Language Selector */}
+          <LanguageSelector compact={true} />
+
           {user && (
             <Link
               to="/account"
@@ -220,7 +230,7 @@ export default function Navbar() {
                       {user.username}
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
-                      {user.role === 'admin' ? 'Admin' : 'Học viên'}
+                      {user.role === 'admin' ? t('nav.admin') : 'Member'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 truncate mt-0.5">{user.email}</p>
@@ -236,7 +246,7 @@ export default function Navbar() {
                 >
                   <div className="flex items-center gap-2.5">
                     <PlusCircle className="w-5 h-5" />
-                    <span>Tạo bộ thẻ mới</span>
+                    <span>{t('nav.create_deck')}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 opacity-80" />
                 </Link>
@@ -247,7 +257,7 @@ export default function Navbar() {
                 >
                   <div className="flex items-center gap-2.5">
                     <Layers className="w-5 h-5 text-indigo-600" />
-                    <span>Bộ thẻ của tôi</span>
+                    <span>{t('nav.my_decks')}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </Link>
@@ -259,7 +269,7 @@ export default function Navbar() {
                   >
                     <div className="flex items-center gap-2.5">
                       <Shield className="w-5 h-5 text-amber-600" />
-                      <span>Quản trị hệ thống (Admin)</span>
+                      <span>{t('nav.admin')}</span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-amber-500" />
                   </Link>
@@ -271,7 +281,7 @@ export default function Navbar() {
                 >
                   <div className="flex items-center gap-2.5">
                     <Settings className="w-5 h-5 text-slate-500" />
-                    <span>Cài đặt & Đổi mật khẩu</span>
+                    <span>{t('nav.account_settings')}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </Link>
@@ -284,7 +294,7 @@ export default function Navbar() {
                   className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 font-bold text-sm hover:bg-rose-100 transition active:scale-[0.98]"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Đăng xuất</span>
+                  <span>{t('nav.logout')}</span>
                 </button>
               </div>
             </>
@@ -292,7 +302,7 @@ export default function Navbar() {
             <div className="space-y-3 py-1">
               <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl">
                 <p className="text-xs font-semibold text-indigo-900 leading-relaxed">
-                  Chào mừng đến với Memora! Đăng nhập để ghi nhớ từ vựng thông minh qua Flashcard & Leitner.
+                  {t('nav.guest_welcome')}
                 </p>
               </div>
 
@@ -302,7 +312,7 @@ export default function Navbar() {
                   className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-sm transition"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>Đăng nhập</span>
+                  <span>{t('nav.login')}</span>
                 </Link>
 
                 <Link
@@ -310,7 +320,7 @@ export default function Navbar() {
                   className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition"
                 >
                   <UserPlus className="w-4 h-4 text-slate-500" />
-                  <span>Đăng ký tài khoản mới</span>
+                  <span>{t('nav.register')}</span>
                 </Link>
               </div>
             </div>

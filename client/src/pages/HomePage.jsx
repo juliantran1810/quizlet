@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { deckService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
   Search,
@@ -34,6 +35,7 @@ const CATEGORIES = [
 export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, formatCategory } = useLanguage();
 
   const [decks, setDecks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -136,14 +138,14 @@ export default function HomePage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">
               {user ? (
                 <span>
-                  Chào mừng, <span className="text-indigo-600">{user.username}</span> 👋
+                  {t('nav.welcome')}, <span className="text-indigo-600">{user.username}</span> 👋
                 </span>
               ) : (
-                'Thư viện học tập'
+                t('home.hero_title')
               )}
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Khám phá các bộ thẻ ghi nhớ, ôn luyện từ vựng và nâng cao hiệu quả học tập.
+              {t('home.hero_subtitle')}
             </p>
           </div>
 
@@ -152,7 +154,7 @@ export default function HomePage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition active:scale-95 self-start md:self-auto"
           >
             <Plus className="w-4 h-4" />
-            <span>Tạo bộ thẻ mới</span>
+            <span>{t('nav.create_deck')}</span>
           </Link>
         </div>
 
@@ -164,7 +166,7 @@ export default function HomePage() {
               <Search className="w-4 h-4 text-slate-400 shrink-0 mr-2.5" />
               <input
                 type="text"
-                placeholder="Tìm kiếm bộ từ vựng, chủ đề học..."
+                placeholder={t('home.search_placeholder')}
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => {
@@ -177,7 +179,7 @@ export default function HomePage() {
                   type="button"
                   onClick={handleClearSearch}
                   className="p-1 text-slate-400 hover:text-slate-600 transition"
-                  title="Xóa tìm kiếm"
+                  title={t('home.clear_search')}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -186,7 +188,7 @@ export default function HomePage() {
                 type="submit"
                 className="ml-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition shrink-0"
               >
-                Tìm
+                {t('common.search')}
               </button>
             </form>
 
@@ -194,8 +196,8 @@ export default function HomePage() {
             {showSearchDropdown && searchSuggestions.length > 0 && (
               <div className="absolute z-40 left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden divide-y divide-slate-100 animate-in fade-in duration-150">
                 <div className="px-3 py-2 bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>Gợi ý nhanh</span>
-                  <span className="text-[10px] font-normal text-slate-400">Bấm để mở bộ thẻ</span>
+                  <span>{t('home.quick_suggestion')}</span>
+                  <span className="text-[10px] font-normal text-slate-400">{t('home.click_to_open')}</span>
                 </div>
                 <div className="max-h-60 overflow-y-auto">
                   {searchSuggestions.map((deck) => (
@@ -213,15 +215,15 @@ export default function HomePage() {
                           {deck.title}
                         </div>
                         <div className="text-xs text-slate-400 line-clamp-1">
-                          {deck.description || 'Không có mô tả chi tiết'}
+                          {deck.description || t('home.no_description')}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-semibold rounded-md">
-                          {deck.category || 'General'}
+                          {formatCategory(deck.category)}
                         </span>
                         <span className="text-xs text-slate-400 font-medium">
-                          {deck.cards?.length || 0} thẻ
+                          {deck.cards?.length || 0} {t('deck.cards_count')}
                         </span>
                       </div>
                     </button>
@@ -244,7 +246,7 @@ export default function HomePage() {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Tất cả ({decks.length})
+                  {t('home.all_scope')} ({decks.length})
                 </button>
                 <button
                   onClick={() => setViewScope('my')}
@@ -254,12 +256,12 @@ export default function HomePage() {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Bộ thẻ của tôi ({myDecksCount})
+                  {t('nav.my_decks')} ({myDecksCount})
                 </button>
               </div>
             ) : (
               <div className="text-xs font-semibold text-slate-500">
-                Thể loại kiến thức:
+                {t('home.category_label')}
               </div>
             )}
 
@@ -275,7 +277,7 @@ export default function HomePage() {
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  {cat === 'All' ? 'Tất cả thể loại' : cat}
+                  {formatCategory(cat)}
                 </button>
               ))}
             </div>
@@ -284,31 +286,31 @@ export default function HomePage() {
 
         {/* Danh sách Bộ thẻ (Deck Cards Grid) */}
         {loading ? (
-          <LoadingSpinner message="Đang tải danh sách bộ thẻ..." />
+          <LoadingSpinner message={t('common.loading')} />
         ) : displayedDecks.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
             <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-base font-bold text-slate-700">
-              {search ? 'Không tìm thấy bộ thẻ nào phù hợp' : 'Chưa có bộ thẻ nào'}
+              {search ? t('home.no_decks_found') : t('home.no_decks_yet')}
             </h3>
             <p className="text-xs text-slate-400 mt-1 mb-5 max-w-sm mx-auto">
               {search
-                ? `Không có kết quả nào khớp với từ khóa "${search}". Hãy thử từ khóa khác.`
-                : 'Bắt đầu ngay bằng cách tạo bộ từ vựng đầu tiên của bạn.'}
+                ? `"${search}" - ${t('home.no_decks_found')}`
+                : t('home.no_description')}
             </p>
             {search ? (
               <button
                 onClick={handleClearSearch}
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
               >
-                Xóa tìm kiếm
+                {t('home.clear_search')}
               </button>
             ) : (
               <Link
                 to="/create"
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition"
               >
-                <Plus className="w-4 h-4" /> Tạo bộ thẻ mới
+                <Plus className="w-4 h-4" /> {t('home.create_first_deck')}
               </Link>
             )}
           </div>
@@ -328,7 +330,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between gap-2 mb-2.5">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold text-[11px]">
-                          {deck.category || 'General'}
+                          {formatCategory(deck.category)}
                         </span>
                         {isOwner && (
                           <span
@@ -339,13 +341,13 @@ export default function HomePage() {
                             }`}
                           >
                             {deck.isPublic ? <Globe className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
-                            {deck.isPublic ? 'Công khai' : 'Riêng tư'}
+                            {deck.isPublic ? t('deck.public') : t('deck.private')}
                           </span>
                         )}
                       </div>
                       <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
                         <Layers className="w-3.5 h-3.5 text-slate-400" />
-                        {totalCards} thẻ
+                        {totalCards} {t('deck.cards_count')}
                       </span>
                     </div>
 
@@ -358,7 +360,7 @@ export default function HomePage() {
 
                     {/* Deck Description */}
                     <p className="text-xs text-slate-500 mt-1 line-clamp-2 min-h-[32px] leading-relaxed">
-                      {deck.description || 'Không có mô tả chi tiết.'}
+                      {deck.description || t('home.no_description')}
                     </p>
 
                     {/* Preview từ vựng thực tế (Tập trung vào nội dung) */}
@@ -376,7 +378,7 @@ export default function HomePage() {
                         ))}
                         {deck.cards.length > 3 && (
                           <span className="text-[10px] font-semibold text-slate-400 self-center px-1">
-                            +{deck.cards.length - 3} nữa
+                            +{deck.cards.length - 3} {t('home.more')}
                           </span>
                         )}
                       </div>
@@ -391,7 +393,7 @@ export default function HomePage() {
                         {deck.author?.username?.slice(0, 1).toUpperCase() || 'U'}
                       </div>
                       <span className="text-xs text-slate-500 font-medium truncate max-w-[100px]">
-                        {deck.author?.username || 'Ẩn danh'}
+                        {deck.author?.username || t('home.anonymous')}
                       </span>
                     </div>
 
@@ -400,28 +402,28 @@ export default function HomePage() {
                       <Link
                         to={`/decks/${deck._id}/flashcards`}
                         className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-semibold transition flex items-center gap-1"
-                        title="Học Flashcard 3D"
+                        title={t('deck.mode_flashcards')}
                       >
                         <Layers className="w-3.5 h-3.5" />
-                        <span>Học ngay</span>
+                        <span>{t('home.study_now')}</span>
                       </Link>
                       <Link
                         to={`/decks/${deck._id}/learn`}
-                        title="Luyện gõ từ (Active Recall)"
+                        title={t('deck.mode_learn')}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition"
                       >
                         <SpellCheck className="w-4 h-4" />
                       </Link>
                       <Link
                         to={`/decks/${deck._id}/quiz`}
-                        title="Luyện trắc nghiệm"
+                        title={t('deck.mode_quiz')}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition"
                       >
                         <BrainCircuit className="w-4 h-4" />
                       </Link>
                       <Link
                         to={`/decks/${deck._id}/match`}
-                        title="Game ghép từ"
+                        title={t('deck.mode_match')}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition"
                       >
                         <Gamepad2 className="w-4 h-4" />

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { adminService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
   Users,
@@ -51,7 +52,7 @@ function StatCard({ icon: Icon, label, value, color }) {
 }
 
 // ===== CONFIRM MODAL =====
-function ConfirmModal({ message, onConfirm, onCancel }) {
+function ConfirmModal({ message, onConfirm, onCancel, t }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
@@ -61,20 +62,20 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
         <div className="w-14 h-14 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-4">
           <AlertTriangle className="w-7 h-7 text-rose-500" />
         </div>
-        <h3 className="text-lg font-bold text-slate-800 mb-2">Xác nhận</h3>
+        <h3 className="text-lg font-bold text-slate-800 mb-2">{t ? t('admin.confirm_title') : 'Xác nhận'}</h3>
         <p className="text-sm text-slate-500 mb-6">{message}</p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={onCancel}
             className="px-5 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
           >
-            Hủy
+            {t ? t('common.cancel') : 'Hủy'}
           </button>
           <button
             onClick={onConfirm}
             className="px-5 py-2 rounded-xl bg-rose-600 text-white text-sm font-bold hover:bg-rose-700 transition"
           >
-            Xác nhận xóa
+            {t ? t('admin.confirm_delete_btn') : 'Xác nhận xóa'}
           </button>
         </div>
       </div>
@@ -100,6 +101,7 @@ function Toast({ message, type, onClose }) {
 // ===== MAIN PAGE =====
 export default function AdminPage() {
   const { user } = useAuth();
+  const { t, formatCategory } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState(null);
@@ -270,9 +272,9 @@ export default function AdminPage() {
   if (!user || user.role !== 'admin') return null;
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'users', label: 'Người dùng', icon: Users },
-    { id: 'decks', label: 'Bộ thẻ', icon: BookOpen },
+    { id: 'dashboard', label: t('admin.tab_dashboard'), icon: LayoutDashboard },
+    { id: 'users', label: t('admin.tab_users'), icon: Users },
+    { id: 'decks', label: t('admin.tab_decks'), icon: BookOpen },
   ];
 
   return (
@@ -285,12 +287,12 @@ export default function AdminPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight">Admin Workbench</h1>
+              <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('admin.title')}</h1>
               <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-extrabold text-[11px] uppercase tracking-wider">
                 Control Hub
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">Giám sát & điều phối toàn bộ người dùng, bộ thẻ và hoạt động Memora</p>
+            <p className="text-xs text-slate-400 mt-0.5">{t('admin.subtitle')}</p>
           </div>
         </div>
 
@@ -300,7 +302,7 @@ export default function AdminPage() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-2xs transition disabled:opacity-50 self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${refreshing ? 'animate-spin' : ''}`} />
-          <span>{refreshing ? 'Đang cập nhật...' : 'Làm mới dữ liệu'}</span>
+          <span>{refreshing ? t('admin.refreshing') : t('admin.refresh')}</span>
         </button>
       </div>
 
@@ -327,12 +329,12 @@ export default function AdminPage() {
         <div className="space-y-8">
           {/* Stats grid (6 Thẻ KPI phong cách hiện đại) */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
-            <StatCard icon={Users} label="Tổng User" value={stats.stats?.totalUsers} color="indigo" />
-            <StatCard icon={Flame} label="Streak Active" value={stats.stats?.activeStreaks} color="rose" />
-            <StatCard icon={BookOpen} label="Tổng Bộ thẻ" value={stats.stats?.totalDecks} color="emerald" />
-            <StatCard icon={Globe} label="Công khai" value={stats.stats?.publicDecks} color="indigo" />
-            <StatCard icon={Lock} label="Riêng tư" value={stats.stats?.privateDecks} color="amber" />
-            <StatCard icon={FileText} label="Tổng Thẻ từ" value={stats.stats?.totalCards} color="amber" />
+            <StatCard icon={Users} label={t('admin.total_users')} value={stats.stats?.totalUsers} color="indigo" />
+            <StatCard icon={Flame} label={t('admin.streak_active')} value={stats.stats?.activeStreaks} color="rose" />
+            <StatCard icon={BookOpen} label={t('admin.total_decks')} value={stats.stats?.totalDecks} color="emerald" />
+            <StatCard icon={Globe} label={t('admin.public_decks')} value={stats.stats?.publicDecks} color="indigo" />
+            <StatCard icon={Lock} label={t('admin.private_decks')} value={stats.stats?.privateDecks} color="amber" />
+            <StatCard icon={FileText} label={t('admin.total_cards')} value={stats.stats?.totalCards} color="amber" />
           </div>
 
           {/* Phân bổ theo chuyên mục & Bảng vàng Streak */}
@@ -340,7 +342,7 @@ export default function AdminPage() {
             {/* Phân bổ Chủ đề / Categories */}
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
               <h2 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-indigo-600" /> Phân bổ theo chuyên mục
+                <BarChart3 className="w-4 h-4 text-indigo-600" /> {t('admin.category_distribution')}
               </h2>
               <div className="space-y-3">
                 {stats.categoryStats?.map((c) => {
@@ -348,8 +350,8 @@ export default function AdminPage() {
                   return (
                     <div key={c._id || 'Khác'} className="space-y-1">
                       <div className="flex justify-between text-xs font-semibold text-slate-600">
-                        <span>{c._id || 'Chung'}</span>
-                        <span className="text-slate-400">{c.count} bộ ({pct}%)</span>
+                        <span>{formatCategory(c._id)}</span>
+                        <span className="text-slate-400">{c.count} {t('deck.cards_count')} ({pct}%)</span>
                       </div>
                       <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div
@@ -366,7 +368,7 @@ export default function AdminPage() {
             {/* Bảng vàng Streak (Top Streakers) */}
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
               <h2 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">
-                <Flame className="w-4 h-4 text-orange-500 fill-orange-500" /> Bảng vàng Streak 🔥
+                <Flame className="w-4 h-4 text-orange-500 fill-orange-500" /> {t('admin.top_streakers')}
               </h2>
               <div className="space-y-3">
                 {stats.topStreakers?.length > 0 ? (
@@ -381,12 +383,12 @@ export default function AdminPage() {
                       </div>
                       <div className="flex items-center gap-1 font-black text-xs text-orange-600 bg-white px-2 py-0.5 rounded-md border border-orange-200">
                         <Flame className="w-3.5 h-3.5 fill-orange-500" />
-                        <span>{u.streakCount} ngày</span>
+                        <span>{u.streakCount}</span>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-slate-400 text-center py-4">Chưa có người dùng nào tạo streak.</p>
+                  <p className="text-xs text-slate-400 text-center py-4">{t('admin.no_streakers')}</p>
                 )}
               </div>
             </div>
@@ -487,7 +489,7 @@ export default function AdminPage() {
                 type="text"
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="Tìm theo username hoặc email..."
+                placeholder={t('admin.search_users_placeholder')}
                 className="w-full text-xs outline-none bg-transparent text-slate-700 placeholder:text-slate-400"
               />
               {userSearch && (
@@ -500,7 +502,7 @@ export default function AdminPage() {
             {/* Filter by Role */}
             <div className="flex items-center gap-1.5 self-start sm:self-auto">
               <span className="text-xs font-bold text-slate-400 mr-1 flex items-center gap-1">
-                <Filter className="w-3 h-3" /> Vai trò:
+                <Filter className="w-3 h-3" /> {t('admin.col_role')}:
               </span>
               {['All', 'user', 'admin'].map((role) => (
                 <button
@@ -512,7 +514,7 @@ export default function AdminPage() {
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
                   }`}
                 >
-                  {role === 'All' ? 'Tất cả' : role === 'admin' ? 'Quản trị viên' : 'Thành viên'}
+                  {role === 'All' ? t('admin.role_all') : role === 'admin' ? t('admin.role_admin') : t('admin.role_user')}
                 </button>
               ))}
             </div>
@@ -523,13 +525,13 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-                  <th className="text-left px-5 py-3">Thành viên</th>
-                  <th className="text-left px-5 py-3">Email</th>
-                  <th className="text-left px-5 py-3">Streak</th>
-                  <th className="text-left px-5 py-3">Bộ thẻ</th>
-                  <th className="text-left px-5 py-3">Vai trò</th>
-                  <th className="text-left px-5 py-3">Ngày tham gia</th>
-                  <th className="text-right px-5 py-3">Thao tác</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_user')}</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_email')}</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_streak')}</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_deck')}</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_role')}</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_joined')}</th>
+                  <th className="text-right px-5 py-3">{t('admin.col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -651,7 +653,7 @@ export default function AdminPage() {
                 type="text"
                 value={deckSearch}
                 onChange={(e) => setDeckSearch(e.target.value)}
-                placeholder="Tìm theo tiêu đề bộ thẻ..."
+                placeholder={t('admin.search_decks_placeholder')}
                 className="w-full text-xs outline-none bg-transparent text-slate-700 placeholder:text-slate-400"
               />
               {deckSearch && (
@@ -669,9 +671,9 @@ export default function AdminPage() {
                 onChange={(e) => { setDeckCategoryFilter(e.target.value); setDeckPage(1); }}
                 className="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 outline-none"
               >
-                <option value="All">Tất cả chủ đề</option>
+                <option value="All">{t('home.all_categories')}</option>
                 {['Tiếng Trung', 'Tiếng Anh', 'Công nghệ', 'Khoa học', 'Lịch sử', 'Y Dược', 'General'].map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>{formatCategory(c)}</option>
                 ))}
               </select>
 
@@ -687,7 +689,7 @@ export default function AdminPage() {
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
                     }`}
                   >
-                    {vis === 'All' ? 'Tất cả' : vis === 'public' ? 'Công khai' : 'Riêng tư'}
+                    {vis === 'All' ? t('home.all_scope') : vis === 'public' ? t('deck.public') : t('deck.private')}
                   </button>
                 ))}
               </div>
@@ -699,13 +701,13 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-                  <th className="text-left px-5 py-3">Tiêu đề bộ thẻ</th>
-                  <th className="text-left px-5 py-3">Chủ đề</th>
-                  <th className="text-left px-5 py-3">Tác giả</th>
-                  <th className="text-left px-5 py-3">Số thẻ</th>
-                  <th className="text-left px-5 py-3">Trạng thái</th>
-                  <th className="text-left px-5 py-3">Ngày tạo</th>
-                  <th className="text-right px-5 py-3">Thao tác</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_deck')}</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_category')}</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_author')}</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_cards')}</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_visibility')}</th>
+                  <th className="text-left px-5 py-3">{t('admin.col_joined')}</th>
+                  <th className="text-right px-5 py-3">{t('admin.col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -893,7 +895,7 @@ export default function AdminPage() {
                 onClick={() => setPreviewDeck(null)}
                 className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition"
               >
-                Đóng
+                {t('common.close')}
               </button>
             </div>
           </div>
@@ -903,10 +905,11 @@ export default function AdminPage() {
       {/* Confirm Modal */}
       {confirm && (
         <ConfirmModal
+          t={t}
           message={
             confirm.type === 'user'
-              ? `Xóa người dùng "${confirm.name}"? Toàn bộ bộ thẻ và dữ liệu học của người này cũng sẽ bị xóa.`
-              : `Xóa bộ thẻ "${confirm.name}"? Thao tác này không thể hoàn tác.`
+              ? `${t('admin.confirm_delete_user')} "${confirm.name}"`
+              : `${t('admin.confirm_delete_deck')} "${confirm.name}"`
           }
           onConfirm={() =>
             confirm.type === 'user'

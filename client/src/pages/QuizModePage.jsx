@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { deckService } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
   ArrowLeft,
@@ -18,6 +19,7 @@ import { speak } from '../utils/speech';
 
 export default function QuizModePage() {
   const { id } = useParams();
+  const { t } = useLanguage();
   const [deck, setDeck] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -149,7 +151,7 @@ export default function QuizModePage() {
             to={`/decks/${id}`}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition"
           >
-            <ArrowLeft className="w-4 h-4" /> Thoát Quiz
+            <ArrowLeft className="w-4 h-4" /> {t('flashcards.exit')}
           </Link>
           <div className="flex items-center gap-3">
             <button
@@ -157,7 +159,7 @@ export default function QuizModePage() {
                 const next = sfx.toggleMute();
                 setIsMuted(next);
               }}
-              title={isMuted ? "Bật hiệu ứng âm thanh" : "Tắt hiệu ứng âm thanh"}
+              title={t('study.sound')}
               className={`p-1.5 rounded-xl border transition ${
                 isMuted
                   ? 'bg-rose-50 border-rose-200 text-rose-500 hover:bg-rose-100'
@@ -167,7 +169,7 @@ export default function QuizModePage() {
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
             <span className="text-xs font-bold px-3 py-1 bg-purple-50 text-purple-700 rounded-full">
-              Chế độ Trắc nghiệm (Quiz Mode)
+              {t('quiz.title')}
             </span>
           </div>
         </div>
@@ -176,8 +178,8 @@ export default function QuizModePage() {
         {!quizFinished && (
           <div className="mb-8">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mb-2">
-              <span>Câu hỏi {currentQIndex + 1} / {questions.length}</span>
-              <span className="text-indigo-600 font-bold">Điểm hiện tại: {score}</span>
+              <span>{t('admin.col_cards')} {currentQIndex + 1} / {questions.length}</span>
+              <span className="text-indigo-600 font-bold">{t('study.score')}: {score}</span>
             </div>
             <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
               <div
@@ -199,11 +201,10 @@ export default function QuizModePage() {
             </div>
 
             <h2 className="text-2xl font-black text-slate-800 mb-2">
-              {percentage >= 80 ? 'Xuất sắc! Kết quả tuyệt vời!' : 'Hoàn thành bài kiểm tra!'}
+              {percentage >= 80 ? t('quiz.excellent_title') : t('quiz.finished_title')}
             </h2>
             <p className="text-sm text-slate-500 mb-6">
-              Bạn đã trả lời đúng <strong className="text-slate-800">{score}</strong> trên tổng số{' '}
-              <strong className="text-slate-800">{questions.length}</strong> câu ({percentage}%).
+              {t('quiz.result_summary').replace('{score}', score).replace('{total}', questions.length).replace('{pct}', percentage)}
             </p>
 
             {/* List of wrong questions */}
@@ -211,15 +212,15 @@ export default function QuizModePage() {
               <div className="mb-8 text-left bg-slate-50 p-5 rounded-2xl border border-slate-200/80 max-h-64 overflow-y-auto">
                 <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <XCircle className="w-4 h-4 text-rose-500" />
-                  Các câu cần xem lại ({wrongAnswers.length}):
+                  {t('quiz.wrong_review_title').replace('{count}', wrongAnswers.length)}
                 </h4>
                 <div className="space-y-3">
                   {wrongAnswers.map((w, idx) => (
                     <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200 text-xs">
-                      <div className="font-bold text-slate-800 mb-1">Thuật ngữ: {w.term}</div>
-                      <div className="text-rose-600 font-medium">Bạn chọn: {w.userAnswer}</div>
+                      <div className="font-bold text-slate-800 mb-1">{t('deck.term_col')}: {w.term}</div>
+                      <div className="text-rose-600 font-medium">{t('quiz.your_answer')} {w.userAnswer}</div>
                       <div className="text-emerald-700 font-semibold">
-                        Đáp án đúng: {w.correctAnswer}
+                        {t('quiz.correct_answer')} {w.correctAnswer}
                       </div>
                     </div>
                   ))}
@@ -236,13 +237,13 @@ export default function QuizModePage() {
                 }}
                 className="px-6 py-2.5 rounded-xl bg-purple-600 text-white font-semibold text-sm hover:bg-purple-700 transition flex items-center gap-2"
               >
-                <RotateCcw className="w-4 h-4" /> Làm lại bài thi
+                <RotateCcw className="w-4 h-4" /> {t('quiz.retake_quiz')}
               </button>
               <Link
                 to={`/decks/${id}`}
                 className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm hover:bg-slate-200 transition"
               >
-                Quay lại bộ thẻ
+                {t('quiz.back_to_deck')}
               </Link>
             </div>
           </div>
@@ -252,7 +253,7 @@ export default function QuizModePage() {
             {/* Term Display */}
             <div className="text-center mb-8">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Thuật ngữ cần định nghĩa:
+                {t('quiz.term_to_define')}
               </span>
               <div className="flex items-center justify-center gap-3 mt-2">
                 <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
@@ -260,7 +261,7 @@ export default function QuizModePage() {
                 </h2>
                 <button
                   onClick={() => handleSpeak(currentQ.term)}
-                  title="Phát âm"
+                  title={t('study.sound')}
                   className="p-1.5 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
                 >
                   <Volume2 className="w-5 h-5" />
@@ -268,7 +269,7 @@ export default function QuizModePage() {
               </div>
 
               {currentQ.hint && (
-                <p className="text-xs text-amber-600 italic mt-2">💡 Gợi ý: {currentQ.hint}</p>
+                <p className="text-xs text-amber-600 italic mt-2">💡 {t('quiz.hint')}: {currentQ.hint}</p>
               )}
             </div>
 
@@ -311,7 +312,7 @@ export default function QuizModePage() {
                   onClick={handleNextQuestion}
                   className="px-6 py-2.5 rounded-xl bg-purple-600 text-white font-semibold text-sm hover:bg-purple-700 transition"
                 >
-                  {currentQIndex === questions.length - 1 ? 'Xem kết quả →' : 'Câu tiếp theo →'}
+                  {currentQIndex === questions.length - 1 ? t('quiz.view_results') : t('quiz.next_question')}
                 </button>
               </div>
             )}
@@ -320,7 +321,7 @@ export default function QuizModePage() {
       </div>
 
       <div className="text-center text-xs text-slate-400 py-2">
-        Memora • Tự động tạo câu hỏi trắc nghiệm thông minh
+        {t('quiz.smart_quiz_slogan')}
       </div>
     </div>
   );

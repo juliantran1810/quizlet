@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Volume2, Sparkles, CheckCircle2, RotateCcw, Lightbulb, PenLine, Star } from 'lucide-react';
 import { speak, detectLang } from '../utils/speech';
 import { sfx } from '../utils/sfx';
+import { useLanguage } from '../context/LanguageContext';
 import HanziWriter from './HanziWriter';
 
 export default function Flashcard3D({
@@ -18,6 +19,7 @@ export default function Flashcard3D({
   onPrev,
   onMarkStatus,
 }) {
+  const { t } = useLanguage();
   const [isFlipped, setIsFlipped] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [showStroke, setShowStroke] = useState(false);
@@ -318,7 +320,7 @@ export default function Flashcard3D({
             {!isReversed ? renderDefContent() : renderTermContent()}
 
             <div className="text-center text-xs text-indigo-300/70">
-              Nhấn <kbd className="px-2 py-0.5 bg-white/10 rounded border border-white/20 font-mono text-[11px] text-indigo-200">Space</kbd> để quay lại
+              {t('flashcards.space_to_flip_back')}
             </div>
           </div>
         </motion.div>
@@ -349,7 +351,7 @@ export default function Flashcard3D({
               }`}
           >
             <RotateCcw className="w-4 h-4" />
-            Học lại
+            {t('flashcards.learn_again')}
           </button>
 
           <button
@@ -363,7 +365,7 @@ export default function Flashcard3D({
               }`}
           >
             <CheckCircle2 className="w-4 h-4" />
-            Đã thuộc
+            {t('flashcards.mastered')}
           </button>
         </div>
 
@@ -376,7 +378,7 @@ export default function Flashcard3D({
             disabled={currentIndex === 0}
             className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            ← Thẻ trước
+            {t('flashcards.prev_card')}
           </button>
           <span className="text-sm font-semibold text-slate-600">
             {currentIndex + 1} / {totalCards}
@@ -389,7 +391,7 @@ export default function Flashcard3D({
             disabled={currentIndex === totalCards - 1}
             className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            Thẻ tiếp →
+            {t('flashcards.next_card')}
           </button>
         </div>
       </div>
