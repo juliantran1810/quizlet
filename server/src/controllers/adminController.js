@@ -143,7 +143,7 @@ export const getAllUsers = async (req, res) => {
 export const updateUserRole = async (req, res) => {
   try {
     const { role } = req.body;
-    if (!['user', 'admin'].includes(role)) {
+    if (!['user', 'qa', 'admin'].includes(role)) {
       return res.status(400).json({ status: 'fail', message: 'Role không hợp lệ' });
     }
 

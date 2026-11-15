@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed": "node src/seeder.js",
-    "create-admin": "node src/createAdmin.js"
+    "create-admin": "node src/createAdmin.js",
+    "set-role": "node src/assignRole.js"
   },
   "keywords": [
     "quizlet",

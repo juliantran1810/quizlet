@@ -219,7 +219,8 @@ export default function AdminPage() {
   const handleUpdateRole = async (userId, newRole) => {
     try {
       await adminService.updateUserRole(userId, newRole);
-      showToast(`Đã ${newRole === 'admin' ? 'cấp' : 'thu hồi'} quyền Admin`);
+      const roleName = newRole === 'admin' ? 'Admin' : newRole === 'qa' ? 'QA Tester' : 'Học viên (User)';
+      showToast(`Đã chuyển vai trò người dùng sang: ${roleName}`);
       loadUsers();
     } catch (e) {
       showToast(e.response?.data?.message || 'Lỗi thay đổi role', 'error');
@@ -571,15 +572,27 @@ export default function AdminPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span
-                        className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                          u.role === 'admin'
-                            ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                            : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        {u.role === 'admin' ? '🛡️ Admin' : 'Học viên'}
-                      </span>
+                      {u._id === user._id ? (
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200">
+                          🛡️ Admin
+                        </span>
+                      ) : (
+                        <select
+                          value={u.role || 'user'}
+                          onChange={(e) => handleUpdateRole(u._id, e.target.value)}
+                          className={`text-xs font-bold px-2.5 py-1 rounded-xl border outline-none cursor-pointer transition ${
+                            u.role === 'admin'
+                              ? 'bg-purple-50 text-purple-700 border-purple-200'
+                              : u.role === 'qa'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200 font-extrabold'
+                              : 'bg-slate-50 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          <option value="user">Học viên (User)</option>
+                          <option value="qa">🐞 QA Tester</option>
+                          <option value="admin">🛡️ Admin</option>
+                        </select>
+                      )}
                     </td>
                     <td className="px-5 py-3.5 text-slate-400 text-xs">
                       {new Date(u.createdAt).toLocaleDateString('vi-VN')}
@@ -587,22 +600,13 @@ export default function AdminPage() {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-end gap-2">
                         {u._id !== user._id && (
-                          <>
-                            <button
-                              onClick={() => handleUpdateRole(u._id, u.role === 'admin' ? 'user' : 'admin')}
-                              title={u.role === 'admin' ? 'Thu hồi Admin' : 'Cấp Admin'}
-                              className={`p-1.5 rounded-lg transition ${u.role === 'admin' ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:bg-indigo-50 hover:text-indigo-600'}`}
-                            >
-                              {u.role === 'admin' ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
-                            </button>
-                            <button
-                              onClick={() => setConfirm({ type: 'user', id: u._id, name: u.username })}
-                              title="Xóa người dùng"
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
+                          <button
+                            onClick={() => setConfirm({ type: 'user', id: u._id, name: u.username })}
+                            title="Xóa người dùng"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         )}
                       </div>
                     </td>

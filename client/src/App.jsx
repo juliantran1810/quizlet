@@ -19,6 +19,7 @@ import GravityGamePage from './pages/GravityGamePage';
 import AdminPage from './pages/AdminPage';
 import ManageAccountPage from './pages/ManageAccountPage';
 import LearnModePage from './pages/LearnModePage';
+import BugTrackerPage from './pages/BugTrackerPage';
 
 // Private Route Guard
 const PrivateRoute = ({ children }) => {
@@ -33,6 +34,15 @@ const AdminRoute = ({ children }) => {
   if (loading) return <LoadingSpinner message="Đang kiểm tra quyền quản trị..." />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'admin') return <Navigate to="/" replace />;
+  return children;
+};
+
+// QA or Admin Route Guard (cho trang Bug Tracker)
+const QARoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <LoadingSpinner message="Đang kiểm tra quyền truy cập..." />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'qa' && user.role !== 'admin') return <Navigate to="/" replace />;
   return children;
 };
 
@@ -87,6 +97,24 @@ function AppRoutes() {
               <AdminRoute>
                 <AdminPage />
               </AdminRoute>
+            }
+          />
+
+          {/* QA Bug Tracker (Jira) - Chỉ QA và Admin */}
+          <Route
+            path="/bugs"
+            element={
+              <QARoute>
+                <BugTrackerPage />
+              </QARoute>
+            }
+          />
+          <Route
+            path="/qa"
+            element={
+              <QARoute>
+                <BugTrackerPage />
+              </QARoute>
             }
           />
 

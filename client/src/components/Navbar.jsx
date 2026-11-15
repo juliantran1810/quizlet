@@ -18,6 +18,7 @@ import {
   LogIn,
   UserPlus,
   Settings,
+  Bug,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -81,6 +82,18 @@ export default function Navbar() {
                 <PlusCircle className="w-4 h-4" />
                 <span>{t('nav.create_deck')}</span>
               </Link>
+
+              {/* QA Bug Tracker button — chỉ hiển thị cho QA và Admin */}
+              {(user.role === 'qa' || user.role === 'admin') && (
+                <Link
+                  to="/bugs"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition active:scale-95"
+                  title="QA Bug Tracker (Jira)"
+                >
+                  <Bug className="w-4 h-4 text-rose-600" />
+                  <span className="hidden lg:inline">Bug Tracker</span>
+                </Link>
+              )}
 
               {/* Admin button — chỉ hiển thị cho admin */}
               {user.role === 'admin' && (
@@ -261,6 +274,19 @@ export default function Navbar() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </Link>
+
+                {(user.role === 'qa' || user.role === 'admin') && (
+                  <Link
+                    to="/bugs"
+                    className="flex items-center justify-between p-3 rounded-xl bg-rose-50 text-rose-800 font-semibold text-sm border border-rose-200 transition"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Bug className="w-5 h-5 text-rose-600" />
+                      <span>QA Bug Tracker (Jira)</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-rose-400" />
+                  </Link>
+                )}
 
                 {user.role === 'admin' && (
                   <Link

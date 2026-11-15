@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
+      enum: ['user', 'qa', 'admin'],
       default: 'user',
     },
     // Ảnh đại diện (URL hoặc data URI hoặc tên preset avatar)

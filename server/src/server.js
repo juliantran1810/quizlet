@@ -10,6 +10,7 @@ import deckRoutes from './routes/deckRoutes.js';
 import progressRoutes from './routes/progressRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import issueRoutes from './routes/issueRoutes.js';
 
 // Load biến môi trường
 dotenv.config();
@@ -55,6 +56,7 @@ app.use('/api/decks', deckRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/issues', issueRoutes);
 
 // Route kiểm tra trạng thái máy chủ (Health Check)
 app.get('/api/health', (req, res) => {

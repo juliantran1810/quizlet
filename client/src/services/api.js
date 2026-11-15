@@ -163,5 +163,37 @@ export const aiService = {
   },
 };
 
+// QA Bug / Issue Tracker Services (Jira Clone)
+export const issueService = {
+  getAll: async (params) => {
+    const res = await api.get('/issues', { params });
+    return res.data;
+  },
+  getStats: async () => {
+    const res = await api.get('/issues/stats');
+    return res.data;
+  },
+  getById: async (id) => {
+    const res = await api.get(`/issues/${id}`);
+    return res.data;
+  },
+  create: async (issueData) => {
+    const res = await api.post('/issues', issueData);
+    return res.data;
+  },
+  update: async (id, issueData) => {
+    const res = await api.put(`/issues/${id}`, issueData);
+    return res.data;
+  },
+  addComment: async (id, content) => {
+    const res = await api.post(`/issues/${id}/comments`, { content });
+    return res.data;
+  },
+  delete: async (id) => {
+    const res = await api.delete(`/issues/${id}`);
+    return res.data;
+  },
+};
+
 export default api;
 
