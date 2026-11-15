@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sfx } from '../utils/sfx';
+import { extractValidMeanings } from '../utils/answerMatcher';
 
 // Cấu hình các cấp độ khó
 const DIFFICULTIES = {
@@ -67,7 +68,7 @@ function normalizeText(str) {
     .replace(/\s+/g, ' ');
 }
 
-// Lấy danh sách câu trả lời hợp lệ cho 1 thẻ từ
+// Lấy danh sách câu trả lời hợp lệ cho 1 thẻ từ (hỗ trợ nhiều nghĩa phân cách bởi dấu phẩy, gạch chéo, ngoặc đơn)
 function getValidAnswers(card, mode) {
   const answers = [];
   const add = (val) => {
@@ -79,16 +80,23 @@ function getValidAnswers(card, mode) {
     if (norm && !answers.includes(norm)) answers.push(norm);
   };
 
+  const addDefinition = (def) => {
+    if (!def) return;
+    add(def);
+    const meanings = extractValidMeanings(def);
+    meanings.forEach((m) => add(m));
+  };
+
   if (mode === 'term') {
     add(card.term);
     if (card.pinyin) add(card.pinyin);
   } else if (mode === 'definition') {
-    add(card.definition);
+    addDefinition(card.definition);
   } else {
     // smart mode: chấp nhận cả term, pinyin, definition
     add(card.term);
     if (card.pinyin) add(card.pinyin);
-    add(card.definition);
+    addDefinition(card.definition);
   }
   return answers;
 }

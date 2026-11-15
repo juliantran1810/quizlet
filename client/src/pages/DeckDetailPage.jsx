@@ -402,6 +402,11 @@ export default function DeckDetailPage() {
                       <span className={`font-bold text-slate-800 ${isChinese ? 'text-2xl' : 'text-base'}`}>
                         {card.term}
                       </span>
+                      {card.partOfSpeech && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
+                          {card.partOfSpeech}
+                        </span>
+                      )}
                       <button
                         onClick={() => handleSpeak(card.term)}
                         title="Phát âm"

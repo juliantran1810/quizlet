@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sfx } from '../utils/sfx';
+import { stopSpeaking } from '../utils/speech';
 
 export default function FlashcardStudyPage() {
   const { id } = useParams();
@@ -262,11 +263,12 @@ export default function FlashcardStudyPage() {
               <span className="hidden sm:inline">{autoPlayAudio ? t('flashcards.auto_audio_on') : t('flashcards.auto_audio')}</span>
             </button>
 
-            {/* Nút Bật/Tắt hiệu ứng âm thanh SFX */}
+            {/* Nút Bật/Tắt hiệu ứng âm thanh SFX & TTS */}
             <button
               onClick={() => {
                 const next = sfx.toggleMute();
                 setIsMuted(next);
+                if (next) stopSpeaking();
               }}
               title={t('study.sound')}
               className={`p-2 rounded-xl border transition ${

@@ -1,6 +1,8 @@
 import express from 'express';
 import {
   register,
+  sendRegisterOtp,
+  verifyOtpRegister,
   login,
   getMe,
   updateProfile,
@@ -10,6 +12,8 @@ import { protect } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
+router.post('/send-otp', sendRegisterOtp);
+router.post('/verify-otp-register', verifyOtpRegister);
 router.post('/register', register);
 router.post('/login', login);
 router.get('/me', protect, getMe);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { BookOpen, LogIn, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const { login } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -36,8 +38,8 @@ export default function LoginPage() {
           <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <BookOpen className="w-6 h-6" />
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-800">Chào mừng trở lại</h2>
-          <p className="text-sm text-slate-500 mt-1">Đăng nhập để theo dõi lộ trình học tập của bạn</p>
+          <h2 className="text-2xl font-extrabold text-slate-800">{t('auth.login_title')}</h2>
+          <p className="text-sm text-slate-500 mt-1">{t('auth.login_subtitle')}</p>
         </div>
 
         {error && (
@@ -50,21 +52,21 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Email
+              {t('auth.email_label')}
             </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@gmail.com"
+              placeholder={t('auth.email_ph')}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm transition"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Mật khẩu
+              {t('auth.password_label')}
             </label>
             <input
               type="password"
@@ -82,14 +84,14 @@ export default function LoginPage() {
             className="w-full py-3 px-4 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <LogIn className="w-4 h-4" />
-            {submitting ? 'Đang xử lý...' : 'Đăng nhập'}
+            {submitting ? t('common.loading') : t('auth.login_btn')}
           </button>
         </form>
 
         <p className="text-center text-xs text-slate-500 mt-6">
-          Chưa có tài khoản?{' '}
+          {t('auth.no_account')}{' '}
           <Link to="/register" className="font-semibold text-indigo-600 hover:underline">
-            Đăng ký ngay
+            {t('auth.register_now')}
           </Link>
         </p>
       </div>

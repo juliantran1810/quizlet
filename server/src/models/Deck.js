@@ -27,6 +27,11 @@ const cardSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    partOfSpeech: {
+      type: String,
+      default: '',
+      trim: true,
+    },
   },
   {
     _id: true, // Tự động sinh ObjectId cho từng thẻ để liên kết với UserProgress

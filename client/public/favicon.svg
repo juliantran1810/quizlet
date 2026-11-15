@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="memora-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="50%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#4F46E5" />
+    </linearGradient>
+    <linearGradient id="memora-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="50%" stop-color="#06B6D4" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#4F46E5" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect x="6" y="8" width="52" height="48" rx="14" fill="url(#memora-grad)" filter="url(#shadow)" />
+  <rect x="6" y="8" width="52" height="48" rx="14" stroke="#A5B4FC" stroke-width="1.5" stroke-opacity="0.4" fill="none" />
+  <path d="M14 6H50C53.3137 6 56 8.68629 56 12V14H8V12C8 8.68629 10.6863 6 14 6Z" fill="#C7D2FE" fill-opacity="0.3" />
+  <path d="M19 44V23L27.5 34.5C29.5 37.2 34.5 37.2 36.5 34.5L45 23V44" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M47 13L48.2 16.8L52 18L48.2 19.2L47 23L45.8 19.2L42 18L45.8 16.8L47 13Z" fill="url(#memora-glow)" />
+</svg>

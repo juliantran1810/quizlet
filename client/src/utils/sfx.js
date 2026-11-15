@@ -34,6 +34,11 @@ class SoundEffects {
     this.muted = !this.muted;
     localStorage.setItem('quizlet_sfx_muted', String(this.muted));
     this.listeners.forEach((cb) => cb(this.muted));
+    if (this.muted && typeof window !== 'undefined') {
+      try {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
     return this.muted;
   }
 

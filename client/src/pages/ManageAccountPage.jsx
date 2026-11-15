@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { deckService, authService } from '../services/api';
@@ -34,8 +34,22 @@ export default function ManageAccountPage() {
   const { user, updateUser } = useAuth();
   const { language, setLanguage, languages, t, formatCategory } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState('decks'); // 'decks' | 'settings'
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl === 'settings' ? 'settings' : 'decks'); // 'decks' | 'settings'
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'settings' || tab === 'decks') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
   const [decks, setDecks] = useState([]);
   const [loadingDecks, setLoadingDecks] = useState(true);
   const [searchDeck, setSearchDeck] = useState('');
@@ -242,10 +256,10 @@ export default function ManageAccountPage() {
   const privateCount = decks.filter((d) => !d.isPublic).length;
   const joinedDate = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString('vi-VN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
     : 'Gần đây';
 
   return (
@@ -255,7 +269,7 @@ export default function ManageAccountPage() {
         <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold text-2xl flex items-center justify-center shadow-lg shadow-indigo-100 overflow-hidden">
+              <div className={`w-16 h-16 rounded-2xl ${user?.avatar ? 'bg-white border-2 border-slate-200' : 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white'} font-extrabold text-2xl flex items-center justify-center shadow-lg shadow-indigo-100 overflow-hidden`}>
                 {user?.avatar ? (
                   <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
                 ) : (
@@ -316,23 +330,21 @@ export default function ManageAccountPage() {
         {/* Tab Navigation */}
         <div className="flex items-center gap-3 border-b border-slate-200 pb-2">
           <button
-            onClick={() => setActiveTab('decks')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition ${
-              activeTab === 'decks'
-                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
+            onClick={() => handleTabChange('decks')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition ${activeTab === 'decks'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
           >
             <Layers className="w-4 h-4" />
             {t('account.decks_tab')} ({decks.length})
           </button>
           <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition ${
-              activeTab === 'settings'
-                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
+            onClick={() => handleTabChange('settings')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition ${activeTab === 'settings'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
           >
             <KeyRound className="w-4 h-4" />
             {t('account.security_tab')}
@@ -359,31 +371,28 @@ export default function ManageAccountPage() {
                 <div className="flex items-center bg-white border border-slate-200 rounded-2xl p-1 text-xs font-semibold text-slate-600">
                   <button
                     onClick={() => setVisibilityFilter('all')}
-                    className={`px-3 py-1.5 rounded-xl transition ${
-                      visibilityFilter === 'all'
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'hover:text-slate-900'
-                    }`}
+                    className={`px-3 py-1.5 rounded-xl transition ${visibilityFilter === 'all'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'hover:text-slate-900'
+                      }`}
                   >
                     {t('home.all_scope')} ({decks.length})
                   </button>
                   <button
                     onClick={() => setVisibilityFilter('public')}
-                    className={`px-3 py-1.5 rounded-xl transition ${
-                      visibilityFilter === 'public'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'hover:text-slate-900'
-                    }`}
+                    className={`px-3 py-1.5 rounded-xl transition ${visibilityFilter === 'public'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'hover:text-slate-900'
+                      }`}
                   >
                     🌍 {t('deck.public')} ({publicCount})
                   </button>
                   <button
                     onClick={() => setVisibilityFilter('private')}
-                    className={`px-3 py-1.5 rounded-xl transition ${
-                      visibilityFilter === 'private'
-                        ? 'bg-amber-600 text-white shadow-xs'
-                        : 'hover:text-slate-900'
-                    }`}
+                    className={`px-3 py-1.5 rounded-xl transition ${visibilityFilter === 'private'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'hover:text-slate-900'
+                      }`}
                   >
                     🔒 {t('deck.private')} ({privateCount})
                   </button>
@@ -437,11 +446,10 @@ export default function ManageAccountPage() {
                           type="button"
                           onClick={() => handleToggleVisibility(deck._id, deck.isPublic)}
                           title={`${t('deck.public')} / ${t('deck.private')}`}
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold border transition ${
-                            deck.isPublic
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                              : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
-                          }`}
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold border transition ${deck.isPublic
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                            : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
+                            }`}
                         >
                           {deck.isPublic ? (
                             <>
@@ -541,11 +549,10 @@ export default function ManageAccountPage() {
 
               {profileMsg.text && (
                 <div
-                  className={`mb-4 p-3 rounded-xl text-xs flex items-center gap-2 ${
-                    profileMsg.type === 'success'
-                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                      : 'bg-rose-50 text-rose-800 border border-rose-200'
-                  }`}
+                  className={`mb-4 p-3 rounded-xl text-xs flex items-center gap-2 ${profileMsg.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                    }`}
                 >
                   {profileMsg.type === 'success' ? (
                     <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
@@ -562,11 +569,11 @@ export default function ManageAccountPage() {
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                     {t('account.avatar_label')}
                   </label>
-                  
+
                   <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
                     {/* Preview avatar hiện tại */}
                     <div className="relative group shrink-0">
-                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-black text-2xl flex items-center justify-center shadow-md overflow-hidden border-2 border-white">
+                      <div className={`w-20 h-20 rounded-2xl ${avatar ? 'bg-white border-2 border-slate-200' : 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white'} font-black text-2xl flex items-center justify-center shadow-md overflow-hidden border-2 border-white`}>
                         {avatar ? (
                           <img src={avatar} alt="Preview" className="w-full h-full object-cover" />
                         ) : (
@@ -600,11 +607,10 @@ export default function ManageAccountPage() {
                             key={idx}
                             type="button"
                             onClick={() => setAvatar(url)}
-                            className={`w-9 h-9 rounded-xl overflow-hidden border-2 p-0.5 transition-all ${
-                              avatar === url
-                                ? 'border-indigo-600 scale-110 shadow-sm ring-2 ring-indigo-200'
-                                : 'border-slate-200 hover:border-slate-400 bg-white'
-                            }`}
+                            className={`w-9 h-9 rounded-xl overflow-hidden border-2 p-0.5 transition-all ${avatar === url
+                              ? 'border-indigo-600 scale-110 shadow-sm ring-2 ring-indigo-200'
+                              : 'border-slate-200 hover:border-slate-400 bg-white'
+                              }`}
                           >
                             <img src={url} alt={`Preset ${idx}`} className="w-full h-full object-cover rounded-lg" />
                           </button>
@@ -672,11 +678,10 @@ export default function ManageAccountPage() {
 
               {passwordMsg.text && (
                 <div
-                  className={`mb-4 p-3 rounded-xl text-xs flex items-center gap-2 ${
-                    passwordMsg.type === 'success'
-                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                      : 'bg-rose-50 text-rose-800 border border-rose-200'
-                  }`}
+                  className={`mb-4 p-3 rounded-xl text-xs flex items-center gap-2 ${passwordMsg.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                    }`}
                 >
                   {passwordMsg.type === 'success' ? (
                     <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
@@ -769,11 +774,10 @@ export default function ManageAccountPage() {
                       key={item.code}
                       type="button"
                       onClick={() => setLanguage(item.code)}
-                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left ${
-                        isSelected
-                          ? 'border-indigo-600 bg-indigo-50/50 shadow-sm'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
+                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left ${isSelected
+                        ? 'border-indigo-600 bg-indigo-50/50 shadow-sm'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{item.flag}</span>

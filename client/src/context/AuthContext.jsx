@@ -60,6 +60,16 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   };
 
+  const verifyOtpRegister = async (userData) => {
+    const res = await authService.verifyOtpRegister(userData);
+    const { token: newToken, data } = res;
+    localStorage.setItem('quizlet_token', newToken);
+    localStorage.setItem('quizlet_user', JSON.stringify(data.user));
+    setToken(newToken);
+    setUser(data.user);
+    return data.user;
+  };
+
   const logout = () => {
     localStorage.removeItem('quizlet_token');
     localStorage.removeItem('quizlet_user');
@@ -74,7 +84,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, verifyOtpRegister, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -18,7 +18,9 @@ import {
 import confetti from 'canvas-confetti';
 import { deckService, progressService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { speakTerm, speakChinese } from '../utils/speech';
+import { useLanguage } from '../context/LanguageContext';
+import { speakTerm, speakChinese, stopSpeaking } from '../utils/speech';
+import { checkAnswerMatch } from '../utils/answerMatcher';
 import sfx from '../utils/sfx';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -26,6 +28,7 @@ export default function LearnModePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
+  const { t } = useLanguage();
 
   const [deck, setDeck] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,8 +41,13 @@ export default function LearnModePage() {
   // Trạng thái nhập liệu của người dùng
   const [inputValue, setInputValue] = useState('');
   const [revealedHintChars, setRevealedHintChars] = useState(0); // Số ký tự đã hé lộ
+  const [showCardHint, setShowCardHint] = useState(false); // Hiển thị gợi ý thẻ
   const [feedback, setFeedback] = useState(null); // null | 'correct' | 'wrong'
   const [mistakeRetryInput, setMistakeRetryInput] = useState(''); // Ô nhập lại khi gõ sai
+
+  // Lịch sử trả lời để xem lại toàn bộ bài sau khi hoàn thành
+  const [history, setHistory] = useState([]);
+  const [reviewTab, setReviewTab] = useState('all'); // 'all' | 'wrong' | 'correct'
 
   // Tùy chọn học tập
   const [isReversed, setIsReversed] = useState(() => {
@@ -121,28 +129,30 @@ export default function LearnModePage() {
     }
   }, [currentIndex, sessionResults.completed, isReversed]);
 
-  // Chuẩn hóa văn bản để so khớp thông minh (bỏ khoảng trắng thừa, chữ hoa/thường, dấu chấm câu mềm)
-  const normalize = (str) => {
-    if (!str) return '';
-    return str
-      .trim()
-      .toLowerCase()
-      .replace(/[\s\t\n]+/g, ' ')
-      .replace(/[.,/#!$%^&*;:{}=\-_`~()?]/g, '');
-  };
+  // Dọn dẹp TTS khi rời trang
+  useEffect(() => {
+    return () => stopSpeaking();
+  }, []);
 
-  // Xử lý gửi câu trả lời
+  // Xử lý gửi câu trả lời với so khớp thông minh hỗ trợ nhiều nghĩa
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!inputValue.trim() || feedback) return;
 
-    const userAns = normalize(inputValue);
-    const targetAns = normalize(answerTarget);
+    const isMatch = checkAnswerMatch(inputValue, answerTarget, currentCard);
 
-    // Ngoài đáp án chính, nếu học tiếng Trung, chấp nhận cả việc gõ đúng Pinyin
-    const pinyinAns = currentCard.pinyin ? normalize(currentCard.pinyin) : null;
-
-    const isMatch = userAns === targetAns || (pinyinAns && userAns === pinyinAns);
+    // Ghi lại lịch sử để xem lại toàn bộ bài sau khi hoàn tất
+    setHistory((prev) => [
+      ...prev,
+      {
+        card: currentCard,
+        userAnswer: inputValue.trim(),
+        targetAnswer,
+        isCorrect: isMatch,
+        hint: currentCard.hint,
+        partOfSpeech: currentCard.partOfSpeech,
+      },
+    ]);
 
     if (isMatch) {
       // Đúng!
@@ -197,13 +207,12 @@ export default function LearnModePage() {
     }
   };
 
-  // Khi gõ sai, người học phải gõ lại đúng đáp án để củng cố
+  // Khi gõ sai, người học gõ lại đúng đáp án để củng cố
   const handleRetrySubmit = (e) => {
     e.preventDefault();
-    const retryAns = normalize(mistakeRetryInput);
-    const targetAns = normalize(answerTarget);
+    const isRetryMatch = checkAnswerMatch(mistakeRetryInput, answerTarget, currentCard);
 
-    if (retryAns === targetAns) {
+    if (isRetryMatch) {
       sfx.play('correct');
       moveToNextCard();
     } else {
@@ -216,6 +225,7 @@ export default function LearnModePage() {
     setInputValue('');
     setMistakeRetryInput('');
     setRevealedHintChars(0);
+    setShowCardHint(false);
 
     if (currentIndex + 1 < cards.length) {
       setCurrentIndex((prev) => prev + 1);
@@ -254,6 +264,9 @@ export default function LearnModePage() {
     setCurrentIndex(0);
     setFeedback(null);
     setInputValue('');
+    setHistory([]);
+    setReviewTab('all');
+    setShowCardHint(false);
     setSessionResults({
       correctFirstTry: 0,
       wrongCards: [],
@@ -269,6 +282,9 @@ export default function LearnModePage() {
     setCurrentIndex(0);
     setFeedback(null);
     setInputValue('');
+    setHistory([]);
+    setReviewTab('all');
+    setShowCardHint(false);
     setSessionResults({
       correctFirstTry: 0,
       wrongCards: [],
@@ -276,15 +292,15 @@ export default function LearnModePage() {
     });
   };
 
-  if (loading) return <LoadingSpinner message="Đang chuẩn bị phiên luyện gõ..." />;
+  if (loading) return <LoadingSpinner message={t('common.loading')} />;
 
   if (error || !deck) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Lỗi tải bộ thẻ</h2>
-        <p className="text-sm text-slate-500 mb-6">{error || 'Không tìm thấy bộ thẻ'}</p>
+        <h2 className="text-xl font-bold text-slate-800 mb-2">{t('deck.not_found')}</h2>
+        <p className="text-sm text-slate-500 mb-6">{error || t('deck.not_found')}</p>
         <Link to="/" className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm">
-          Trở về Trang chủ
+          {t('deck.back_to_decks')}
         </Link>
       </div>
     );
@@ -293,40 +309,49 @@ export default function LearnModePage() {
   if (cards.length === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Bộ thẻ trống</h2>
-        <p className="text-sm text-slate-500 mb-6">Bộ thẻ này chưa có thẻ từ vựng nào để luyện gõ.</p>
+        <h2 className="text-xl font-bold text-slate-800 mb-2">{t('deck.empty_title')}</h2>
+        <p className="text-sm text-slate-500 mb-6">{t('deck.empty_desc')}</p>
         <Link to={`/decks/${id}`} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm">
-          Xem chi tiết bộ thẻ
+          {t('learn.view_deck')}
         </Link>
       </div>
     );
   }
 
-  // --- MÀN HÌNH TỔNG KẾT PHIÊN HỌC ---
+  // --- MÀN HÌNH TỔNG KẾT PHIÊN HỌC & XEM LẠI BÀI TEST ---
   if (sessionResults.completed) {
     const accuracy = Math.round((sessionResults.correctFirstTry / cards.length) * 100);
+    const wrongCount = history.filter((h) => !h.isCorrect).length;
+    const correctCount = history.filter((h) => h.isCorrect).length;
+
+    const displayedHistory = history.filter((item) => {
+      if (reviewTab === 'wrong') return !item.isCorrect;
+      if (reviewTab === 'correct') return item.isCorrect;
+      return true;
+    });
+
     return (
-      <div className="max-w-xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xl text-center">
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xl text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-100">
             <Award className="w-8 h-8" />
           </div>
 
-          <h1 className="text-2xl font-black text-slate-800 mb-1">Xuất sắc hoàn thành!</h1>
+          <h1 className="text-2xl font-black text-slate-800 mb-1">{t('learn.awesome_done')}</h1>
           <p className="text-sm text-slate-500 mb-6">
-            Bạn vừa hoàn tất phiên luyện gõ từ cho bộ <strong className="text-slate-700">{deck.title}</strong>
+            {t('learn.finished_desc').replace('{title}', deck.title)}
           </p>
 
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-100 text-center">
               <span className="text-3xl font-black text-indigo-600">{accuracy}%</span>
-              <p className="text-xs font-semibold text-indigo-700 mt-1">Đúng ngay lần đầu</p>
+              <p className="text-xs font-semibold text-indigo-700 mt-1">{t('learn.first_try_correct')}</p>
             </div>
             <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-100 text-center">
               <span className="text-3xl font-black text-emerald-600">
                 {sessionResults.correctFirstTry}/{cards.length}
               </span>
-              <p className="text-xs font-semibold text-emerald-700 mt-1">Thẻ ghi nhớ vững</p>
+              <p className="text-xs font-semibold text-emerald-700 mt-1">{t('learn.solid_cards')}</p>
             </div>
           </div>
 
@@ -336,23 +361,160 @@ export default function LearnModePage() {
                 onClick={handleRetryWrongCards}
                 className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition"
               >
-                <RotateCcw className="w-4 h-4" /> Ôn lại {sessionResults.wrongCards.length} từ chưa vững
+                <RotateCcw className="w-4 h-4" />{' '}
+                {t('learn.retry_wrong').replace('{count}', sessionResults.wrongCards.length)}
               </button>
             )}
             <button
               onClick={handleRestart}
               className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition"
             >
-              <RotateCcw className="w-4 h-4" /> Luyện tập lại từ đầu
+              <RotateCcw className="w-4 h-4" /> {t('learn.restart')}
             </button>
             <Link
               to={`/decks/${id}`}
               className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition"
             >
-              Xem bộ thẻ
+              {t('learn.view_deck')}
             </Link>
           </div>
         </div>
+
+        {/* XEM LẠI BÀI TEST CHI TIẾT (Review Section - Bug 11) */}
+        {history.length > 0 && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-md">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-600" />
+                {t('quiz.review_title')}
+              </h2>
+
+              {/* Tabs Lọc: Tất cả / Câu sai / Câu đúng */}
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold self-start sm:self-auto">
+                <button
+                  onClick={() => setReviewTab('all')}
+                  className={`px-3 py-1.5 rounded-lg transition ${
+                    reviewTab === 'all'
+                      ? 'bg-white text-indigo-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {t('learn.review_tab_all').replace('{count}', history.length)}
+                </button>
+                <button
+                  onClick={() => setReviewTab('wrong')}
+                  className={`px-3 py-1.5 rounded-lg transition ${
+                    reviewTab === 'wrong'
+                      ? 'bg-white text-rose-600 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {t('learn.review_tab_wrong').replace('{count}', wrongCount)}
+                </button>
+                <button
+                  onClick={() => setReviewTab('correct')}
+                  className={`px-3 py-1.5 rounded-lg transition ${
+                    reviewTab === 'correct'
+                      ? 'bg-white text-emerald-600 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {t('learn.review_tab_correct').replace('{count}', correctCount)}
+                </button>
+              </div>
+            </div>
+
+            {displayedHistory.length === 0 ? (
+              <p className="text-center py-8 text-sm text-slate-400">Không có câu nào trong danh mục này.</p>
+            ) : (
+              <div className="space-y-3">
+                {displayedHistory.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-2xl border text-sm transition ${
+                      item.isCorrect
+                        ? 'bg-emerald-50/40 border-emerald-200'
+                        : 'bg-rose-50/40 border-rose-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold text-base text-slate-900">{item.card.term}</span>
+                          {item.partOfSpeech && (
+                            <span className="px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold">
+                              {item.partOfSpeech}
+                            </span>
+                          )}
+                          {item.card.pinyin && (
+                            <span className="text-xs font-semibold text-indigo-600">
+                              {item.card.pinyin}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => {
+                              if (item.card.pinyin) {
+                                speakChinese(item.card.term);
+                              } else {
+                                speakTerm(item.card.term);
+                              }
+                            }}
+                            className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-white transition"
+                            title={t('learn.listen_audio')}
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="text-xs text-slate-600 font-medium">
+                          <span className="font-bold text-slate-500">{t('deck.definition_col')}:</span>{' '}
+                          {item.card.definition}
+                        </div>
+
+                        <div className="pt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                          <div>
+                            <span className="text-slate-400 font-semibold">{t('quiz.your_answer')}: </span>
+                            <span
+                              className={`font-bold ${
+                                item.isCorrect ? 'text-emerald-700' : 'text-rose-600 line-through'
+                              }`}
+                            >
+                              {item.userAnswer || '(Bỏ trống)'}
+                            </span>
+                          </div>
+                          {!item.isCorrect && (
+                            <div>
+                              <span className="text-emerald-700 font-semibold">{t('quiz.correct_answer')}: </span>
+                              <span className="font-bold text-emerald-800">{item.targetAnswer}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {item.hint && (
+                          <div className="text-[11px] text-amber-700 bg-amber-50/80 px-2.5 py-1 rounded-lg border border-amber-200/60 mt-1 inline-block">
+                            💡 {t('quiz.explanation_hint')} {item.hint}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="shrink-0 pt-0.5">
+                        {item.isCorrect ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Đúng
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-700">
+                            <XCircle className="w-3.5 h-3.5" /> Sai
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -380,10 +542,10 @@ export default function LearnModePage() {
                 ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
                 : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
             }`}
-            title="Đảo chiều câu hỏi và đáp án"
+            title={t('learn.reverse_toggle')}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>{isReversed ? 'Đoán Định nghĩa' : 'Đoán Thuật ngữ'}</span>
+            <span>{isReversed ? t('learn.guess_def') : t('learn.guess_term')}</span>
           </button>
         </div>
       </div>
@@ -391,7 +553,7 @@ export default function LearnModePage() {
       {/* Progress Bar */}
       <div className="mb-6">
         <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
-          <span>Luyện gõ từ (Learn Mode)</span>
+          <span>{t('learn.mode_name')}</span>
           <span>
             {currentIndex + 1} / {cards.length}
           </span>
@@ -406,11 +568,18 @@ export default function LearnModePage() {
 
       {/* QUESTION CARD */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-lg relative mb-6">
-        {/* Category tag */}
+        {/* Category tag & Part of Speech Badge */}
         <div className="flex items-center justify-between mb-4">
-          <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-100 text-slate-600">
-            {isReversed ? 'Gõ định nghĩa phù hợp' : 'Gõ thuật ngữ chuẩn'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-100 text-slate-600">
+              {isReversed ? t('learn.type_definition') : t('learn.type_term')}
+            </span>
+            {currentCard.partOfSpeech && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-700">
+                {currentCard.partOfSpeech}
+              </span>
+            )}
+          </div>
           <button
             onClick={() => {
               sfx.play('click');
@@ -421,7 +590,7 @@ export default function LearnModePage() {
               }
             }}
             className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
-            title="Nghe phát âm chuẩn"
+            title={t('learn.listen_audio')}
           >
             <Volume2 className="w-5 h-5" />
           </button>
@@ -436,6 +605,14 @@ export default function LearnModePage() {
           {isReversed && currentCard.pinyin && (
             <p className="text-sm font-semibold text-indigo-600 mt-1">{currentCard.pinyin}</p>
           )}
+
+          {/* Gợi ý từ vựng (Card Hint - Bug 2) */}
+          {showCardHint && currentCard.hint && (
+            <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+              <Lightbulb className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>{t('learn.card_hint').replace('{hint}', currentCard.hint)}</span>
+            </div>
+          )}
         </div>
 
         {/* INPUT FORM (Trạng thái bình thường hoặc khi đã trả lời đúng) */}
@@ -448,7 +625,7 @@ export default function LearnModePage() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 disabled={feedback === 'correct'}
-                placeholder={`Gõ câu trả lời của bạn... (Nhấn Enter)`}
+                placeholder={`${t('learn.type_answer_ph')} (Enter)`}
                 autoComplete="off"
                 spellCheck="false"
                 className={`w-full px-5 py-4 rounded-2xl text-base font-semibold border-2 outline-none transition-all ${
@@ -460,29 +637,49 @@ export default function LearnModePage() {
 
               {feedback === 'correct' && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-emerald-600 font-bold text-sm">
-                  <CheckCircle2 className="w-5 h-5" /> Chính xác!
+                  <CheckCircle2 className="w-5 h-5" /> {t('learn.correct_feedback')}
                 </div>
               )}
             </div>
 
             <div className="flex items-center justify-between gap-3 pt-2">
-              {/* Nút Gợi ý */}
-              <button
-                type="button"
-                onClick={handleGiveHint}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-3.5 py-2 rounded-xl transition"
-                title="Hé lộ từng chữ cái"
-              >
-                <Lightbulb className="w-4 h-4" />
-                <span>Gợi ý {revealedHintChars > 0 ? `(${revealedHintChars}/${answerTarget.length})` : ''}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Nút Hé lộ ký tự */}
+                <button
+                  type="button"
+                  onClick={handleGiveHint}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-3.5 py-2 rounded-xl transition"
+                  title="Hé lộ từng chữ cái"
+                >
+                  <Lightbulb className="w-4 h-4" />
+                  <span>{t('learn.hint_btn')} {revealedHintChars > 0 ? `(${revealedHintChars}/${answerTarget.length})` : ''}</span>
+                </button>
+
+                {/* Nút Xem Gợi ý thẻ nếu có hint */}
+                {currentCard.hint && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sfx.play('click');
+                      setShowCardHint(!showCardHint);
+                    }}
+                    className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition border ${
+                      showCardHint
+                        ? 'bg-amber-100 border-amber-300 text-amber-900'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{showCardHint ? 'Ẩn gợi ý' : 'Xem gợi ý'}</span>
+                  </button>
+                )}
+              </div>
 
               <button
                 type="submit"
                 disabled={!inputValue.trim() || feedback === 'correct'}
                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-100 transition"
               >
-                <span>Trả lời</span>
+                <span>{t('learn.submit_btn')}</span>
                 <Send className="w-4 h-4" />
               </button>
             </div>
@@ -493,16 +690,16 @@ export default function LearnModePage() {
         {feedback === 'wrong' && (
           <div className="p-5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 space-y-4 animate-fade-in">
             <div className="flex items-center gap-2 font-black text-rose-700">
-              <XCircle className="w-5 h-5" /> Chưa chính xác!
+              <XCircle className="w-5 h-5" /> {t('learn.wrong_feedback')}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="p-3 rounded-xl bg-white/80 border border-rose-100">
-                <span className="text-xs font-bold text-slate-400 block mb-0.5">Bạn đã gõ:</span>
+                <span className="text-xs font-bold text-slate-400 block mb-0.5">{t('quiz.your_answer')}</span>
                 <span className="font-semibold text-rose-600 line-through">{inputValue || '(Bỏ trống)'}</span>
               </div>
               <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200">
-                <span className="text-xs font-bold text-emerald-700 block mb-0.5">Đáp án đúng là:</span>
+                <span className="text-xs font-bold text-emerald-700 block mb-0.5">{t('learn.correct_answer_label')}</span>
                 <span className="font-bold text-emerald-800 text-base">{answerTarget}</span>
                 {currentCard.pinyin && (
                   <span className="text-xs text-indigo-600 block mt-0.5">{currentCard.pinyin}</span>
@@ -513,7 +710,7 @@ export default function LearnModePage() {
             {/* Bắt buộc gõ lại đáp án đúng để tiếp tục */}
             <form onSubmit={handleRetrySubmit} className="pt-2">
               <label className="block text-xs font-bold text-slate-600 mb-1.5">
-                👉 Gõ lại đáp án đúng để ghi nhớ và tiếp tục:
+                👉 {t('learn.type_to_continue')}
               </label>
               <div className="flex gap-2">
                 <input
@@ -521,7 +718,7 @@ export default function LearnModePage() {
                   type="text"
                   value={mistakeRetryInput}
                   onChange={(e) => setMistakeRetryInput(e.target.value)}
-                  placeholder={`Gõ lại: "${answerTarget}"`}
+                  placeholder={`"${answerTarget}"`}
                   className="flex-1 px-4 py-2.5 rounded-xl border border-rose-300 focus:border-emerald-500 outline-none text-sm font-semibold bg-white"
                   autoComplete="off"
                 />
@@ -530,7 +727,7 @@ export default function LearnModePage() {
                   disabled={!mistakeRetryInput.trim()}
                   className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow transition"
                 >
-                  Tiếp tục
+                  {t('common.continue') || 'Tiếp tục'}
                 </button>
               </div>
             </form>

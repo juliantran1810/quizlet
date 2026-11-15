@@ -74,23 +74,32 @@ export default function Flashcard3D({
         handleFlip();
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
-        sfx.slide();
-        onNext && onNext();
+        if (currentIndex < totalCards - 1) {
+          sfx.slide();
+          onNext && onNext();
+        }
       } else if (e.code === 'ArrowLeft') {
         e.preventDefault();
-        sfx.slide();
-        onPrev && onPrev();
+        if (currentIndex > 0) {
+          sfx.slide();
+          onPrev && onPrev();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onNext, onPrev, isReversed, autoPlayAudio, card]);
+  }, [onNext, onPrev, isReversed, autoPlayAudio, card, currentIndex, totalCards]);
 
   if (!card) return null;
 
-  // Render nội dung Thuật ngữ (Chữ Hán + Pinyin)
+  // Render nội dung Thuật ngữ (Chữ Hán + Pinyin + Loại từ)
   const renderTermContent = () => (
     <div className="flex flex-col items-center justify-center text-center my-auto px-4 gap-2">
+      {card.partOfSpeech && (
+        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 mb-1">
+          {card.partOfSpeech}
+        </span>
+      )}
       <h2
         className={`font-extrabold tracking-tight leading-snug ${
           isReversed ? 'text-indigo-50' : 'text-slate-800'
@@ -112,9 +121,9 @@ export default function Flashcard3D({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              speak(card.term || card.pinyin, 'zh-CN');
+              speak(card.term, 'zh-CN');
             }}
-            title="Nghe phát âm chuẩn"
+            title={t('flashcards.pronounce')}
             className={`p-1 rounded-full transition ${
               isReversed
                 ? 'hover:bg-white/10 text-indigo-200'
@@ -187,11 +196,11 @@ export default function Flashcard3D({
                 <Sparkles className="w-3.5 h-3.5" />
                 {!isReversed
                   ? isChinese
-                    ? '汉字 Chữ Hán'
-                    : 'Thuật ngữ (Term)'
+                    ? t('flashcards.hanzi')
+                    : t('flashcards.term')
                   : isChinese
-                  ? '中文意思 Nghĩa tiếng Việt'
-                  : 'Định nghĩa (Definition)'}
+                  ? t('flashcards.meaning')
+                  : t('flashcards.definition')}
               </span>
 
               <div className="flex items-center gap-1.5">
@@ -201,7 +210,7 @@ export default function Flashcard3D({
                       e.stopPropagation();
                       setShowHint((p) => !p);
                     }}
-                    title="Gợi ý"
+                    title={t('flashcards.hint')}
                     className="p-2 rounded-full hover:bg-amber-50 text-amber-500 transition"
                   >
                     <Lightbulb className="w-4 h-4" />
@@ -213,7 +222,7 @@ export default function Flashcard3D({
                       e.stopPropagation();
                       setShowStroke((p) => !p);
                     }}
-                    title="Xem nét bút / Luyện viết"
+                    title={t('flashcards.stroke_order')}
                     className={`p-2 rounded-full transition ${
                       showStroke
                         ? 'bg-indigo-100 text-indigo-700'
@@ -228,7 +237,7 @@ export default function Flashcard3D({
                     e.stopPropagation();
                     speak(!isReversed ? card.term : card.definition);
                   }}
-                  title="Phát âm"
+                  title={t('flashcards.pronounce')}
                   className="p-2 rounded-full hover:bg-indigo-50 text-indigo-600 transition"
                 >
                   <Volume2 className="w-5 h-5" />
@@ -237,7 +246,7 @@ export default function Flashcard3D({
                   <button
                     type="button"
                     onClick={handleStarClick}
-                    title={isStarred ? 'Bỏ gắn sao' : 'Gắn sao thẻ khó'}
+                    title={isStarred ? t('flashcards.unstar') : t('flashcards.star')}
                     className={`p-2 rounded-full transition ${
                       isStarred
                         ? 'text-amber-500 bg-amber-50 hover:bg-amber-100'
@@ -254,9 +263,7 @@ export default function Flashcard3D({
             {!isReversed ? renderTermContent() : renderDefContent()}
 
             <div className="text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-              <span>
-                Bấm chuột hoặc nhấn <kbd className="px-2 py-0.5 bg-slate-100 rounded border border-slate-300 font-mono text-[11px] text-slate-600">Space</kbd> để lật thẻ
-              </span>
+              <span>{t('flashcards.flip_instruction')}</span>
             </div>
           </div>
 
@@ -266,20 +273,32 @@ export default function Flashcard3D({
               <span className="px-3 py-1 bg-white/10 backdrop-blur-sm text-indigo-200 font-semibold rounded-full">
                 {!isReversed
                   ? isChinese
-                    ? '中文意思 Nghĩa tiếng Việt'
-                    : 'Định nghĩa (Definition)'
+                    ? t('flashcards.meaning')
+                    : t('flashcards.definition')
                   : isChinese
-                  ? '汉字 Chữ Hán'
-                  : 'Thuật ngữ (Term)'}
+                  ? t('flashcards.hanzi')
+                  : t('flashcards.term')}
               </span>
               <div className="flex items-center gap-1.5">
+                {card.hint && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowHint((p) => !p);
+                    }}
+                    title={t('flashcards.hint')}
+                    className="p-2 rounded-full hover:bg-white/10 text-amber-300 transition"
+                  >
+                    <Lightbulb className="w-4 h-4" />
+                  </button>
+                )}
                 {isReversed && isChinese && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowStroke((p) => !p);
                     }}
-                    title="Xem nét bút / Luyện viết"
+                    title={t('flashcards.stroke_order')}
                     className={`p-2 rounded-full transition ${
                       showStroke
                         ? 'bg-white/30 text-white'
@@ -294,7 +313,7 @@ export default function Flashcard3D({
                     e.stopPropagation();
                     speak(!isReversed ? card.definition : card.term);
                   }}
-                  title="Phát âm định nghĩa"
+                  title={t('flashcards.pronounce')}
                   className="p-2 rounded-full hover:bg-white/10 text-indigo-200 transition"
                 >
                   <Volume2 className="w-5 h-5" />
@@ -303,7 +322,7 @@ export default function Flashcard3D({
                   <button
                     type="button"
                     onClick={handleStarClick}
-                    title={isStarred ? 'Bỏ gắn sao' : 'Gắn sao thẻ khó'}
+                    title={isStarred ? t('flashcards.unstar') : t('flashcards.star')}
                     className={`p-2 rounded-full transition ${
                       isStarred
                         ? 'text-amber-400 bg-white/20'
@@ -375,7 +394,7 @@ export default function Flashcard3D({
               sfx.slide();
               onPrev && onPrev();
             }}
-            disabled={currentIndex === 0}
+            disabled={currentIndex <= 0 || totalCards <= 1}
             className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {t('flashcards.prev_card')}
@@ -388,7 +407,7 @@ export default function Flashcard3D({
               sfx.slide();
               onNext && onNext();
             }}
-            disabled={currentIndex === totalCards - 1}
+            disabled={currentIndex >= totalCards - 1 || totalCards <= 1}
             className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {t('flashcards.next_card')}

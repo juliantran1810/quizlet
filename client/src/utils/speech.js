@@ -227,4 +227,26 @@ export function speakChinese(text) {
   speak(text, 'zh-CN');
 }
 
+/**
+ * Dừng toàn bộ âm thanh TTS đang phát (cả Web Speech API và Online Audio)
+ */
+export function stopSpeaking() {
+  if (typeof window === 'undefined') return;
+  try {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    activeUtterances.clear();
+  } catch (err) {
+    console.warn('Lỗi khi dừng phát âm:', err);
+  }
+}
+
+export const stopAudio = stopSpeaking;
+
 export default speak;

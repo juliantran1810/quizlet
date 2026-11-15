@@ -66,7 +66,7 @@ export default function Navbar() {
           {user ? (
             <>
               <Link
-                to="/account"
+                to="/account?tab=decks"
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition"
                 title={t('nav.my_decks')}
               >
@@ -102,7 +102,7 @@ export default function Navbar() {
 
                 {/* Daily Streak Flame Badge */}
                 <Link
-                  to="/account"
+                  to="/account?tab=decks"
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-black transition border shadow-xs ${
                     (user.streakCount || 0) > 0
                       ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-orange-200 text-orange-600 hover:scale-105'
@@ -121,11 +121,11 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                  to="/account"
+                  to="/account?tab=settings"
                   className="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-slate-100 transition group"
                   title={t('nav.account_settings')}
                 >
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition-transform overflow-hidden">
+                  <div className={`w-8 h-8 rounded-full ${user.avatar ? 'bg-white' : 'bg-indigo-100 text-indigo-700'} border border-slate-200 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition-transform overflow-hidden`}>
                     {user.avatar ? (
                       <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
                     ) : (
@@ -214,10 +214,10 @@ export default function Navbar() {
             <>
               {/* User Info Header Card */}
               <Link
-                to="/account"
+                to="/account?tab=settings"
                 className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50/50 transition"
               >
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center justify-center font-black text-base overflow-hidden shrink-0">
+                <div className={`w-12 h-12 rounded-2xl ${user.avatar ? 'bg-white' : 'bg-indigo-100 text-indigo-700'} border border-slate-200 flex items-center justify-center font-black text-base overflow-hidden shrink-0`}>
                   {user.avatar ? (
                     <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
                   ) : (
@@ -252,7 +252,7 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                  to="/account"
+                  to="/account?tab=decks"
                   className="flex items-center justify-between p-3 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm transition"
                 >
                   <div className="flex items-center gap-2.5">
@@ -276,7 +276,7 @@ export default function Navbar() {
                 )}
 
                 <Link
-                  to="/account"
+                  to="/account?tab=settings"
                   className="flex items-center justify-between p-3 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm transition"
                 >
                   <div className="flex items-center gap-2.5">
