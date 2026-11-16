@@ -14,17 +14,31 @@ export const sendOtpEmail = async ({ to, otp, subject, heading }) => {
   try {
     const { default: nodemailer } = await import('nodemailer');
 
+    const host = process.env.SMTP_HOST?.trim();
+    const port = Number(process.env.SMTP_PORT) || 587;
+    const secure = process.env.SMTP_SECURE !== undefined
+      ? String(process.env.SMTP_SECURE).trim().toLowerCase() === 'true'
+      : port === 465;
+
+    const user = process.env.SMTP_USER?.trim();
+    // Hỗ trợ cả trường hợp người dùng gõ nhầm SMIP_PASS trên dashboard hosting
+    let pass = (process.env.SMTP_PASS || process.env.SMIP_PASS || '').trim();
+    // Nếu dùng mật khẩu ứng dụng Gmail 16 ký tự có khoảng trắng (vd: abcd efgh ijkl mnop), bỏ khoảng trắng
+    if (host?.includes('gmail') && pass.includes(' ')) {
+      pass = pass.replace(/\s+/g, '');
+    }
+
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: String(process.env.SMTP_SECURE) === 'true',
-      auth: process.env.SMTP_USER
-        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-        : undefined,
+      host,
+      port,
+      secure,
+      auth: user ? { user, pass } : undefined,
     });
 
+    const fromAddress = process.env.SMTP_FROM?.trim() || `Memora <${user}>`;
+
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || `Memora <${process.env.SMTP_USER}>`,
+      from: fromAddress,
       to,
       subject,
       text: `${heading}\n\nMã OTP của bạn: ${otp}\nMã có hiệu lực trong 10 phút. Nếu bạn không yêu cầu, hãy bỏ qua email này.`,
@@ -39,6 +53,9 @@ export const sendOtpEmail = async ({ to, otp, subject, heading }) => {
     return true;
   } catch (err) {
     console.error('[EMAIL] Gửi OTP thất bại:', err.message);
+    if (err.code === 'EAUTH') {
+      console.error('[EMAIL] Lỗi xác thực tài khoản SMTP (EAUTH). Lưu ý: Nếu dùng Gmail, BẮT BUỘC dùng "Mật khẩu ứng dụng" (App Password 16 ký tự), không dùng mật khẩu Gmail chính.');
+    }
     return false;
   }
 };

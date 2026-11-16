@@ -203,5 +203,35 @@ export const issueService = {
   },
 };
 
+// Avatar & Meme Services
+export const avatarService = {
+  // Public
+  getPublic: async () => {
+    const res = await api.get('/avatars');
+    return res.data;
+  },
+  // Admin CRUD
+  adminGetAll: async (params) => {
+    const res = await api.get('/avatars/admin', { params });
+    return res.data;
+  },
+  adminCreate: async (data) => {
+    const res = await api.post('/avatars/admin', data);
+    return res.data;
+  },
+  adminUpdate: async (id, data) => {
+    const res = await api.put(`/avatars/admin/${id}`, data);
+    return res.data;
+  },
+  adminDelete: async (id) => {
+    const res = await api.delete(`/avatars/admin/${id}`);
+    return res.data;
+  },
+  adminSeedDefaults: async (mode = 'append') => {
+    const res = await api.post('/avatars/admin/seed-defaults', { mode });
+    return res.data;
+  },
+};
+
 export default api;
 

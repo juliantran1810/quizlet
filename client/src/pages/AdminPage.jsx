@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { adminService } from '../services/api';
+import { adminService, avatarService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -28,6 +28,12 @@ import {
   Filter,
   Sparkles,
   Layers,
+  Laugh,
+  Plus,
+  Edit,
+  Camera,
+  Check,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 // ===== STAT CARD =====
@@ -122,6 +128,15 @@ export default function AdminPage() {
   const [confirm, setConfirm] = useState(null); // { type, id, name }
   const [toast, setToast] = useState(null);
 
+  // States cho Quản lý Avatar Studio
+  const [avatars, setAvatars] = useState([]);
+  const [loadingAvatars, setLoadingAvatars] = useState(false);
+  const [avatarStats, setAvatarStats] = useState(null);
+  const [avatarCategoryFilter, setAvatarCategoryFilter] = useState('all');
+  const [avatarSearch, setAvatarSearch] = useState('');
+  const [avatarModal, setAvatarModal] = useState(null); // { isOpen, mode: 'create'|'edit', form }
+  const [avatarSubmitting, setAvatarSubmitting] = useState(false);
+
   // Chặn truy cập nếu không phải admin
   useEffect(() => {
     if (user && user.role !== 'admin') {
@@ -174,12 +189,30 @@ export default function AdminPage() {
     }
   }, [deckSearch, deckCategoryFilter, deckVisibilityFilter, deckPage]);
 
+  // Tải avatars cho Admin
+  const loadAvatars = useCallback(async () => {
+    try {
+      setLoadingAvatars(true);
+      const res = await avatarService.adminGetAll({
+        category: avatarCategoryFilter,
+        search: avatarSearch,
+      });
+      setAvatars(res.data.avatars || []);
+      setAvatarStats(res.data.stats || null);
+    } catch {
+      showToast('Không tải được danh sách avatar', 'error');
+    } finally {
+      setLoadingAvatars(false);
+    }
+  }, [avatarCategoryFilter, avatarSearch]);
+
   // Làm mới dữ liệu tab hiện tại
   const handleRefresh = async () => {
     setRefreshing(true);
     if (activeTab === 'dashboard') await loadStats();
     if (activeTab === 'users') await loadUsers();
     if (activeTab === 'decks') await loadDecks();
+    if (activeTab === 'avatars') await loadAvatars();
     setRefreshing(false);
     showToast('Đã làm mới dữ liệu thành công!');
   };
@@ -202,6 +235,10 @@ export default function AdminPage() {
     if (activeTab === 'decks') loadDecks();
   }, [activeTab, loadDecks]);
 
+  useEffect(() => {
+    if (activeTab === 'avatars') loadAvatars();
+  }, [activeTab, loadAvatars]);
+
   // Debounce search
   useEffect(() => {
     if (activeTab !== 'users') return;
@@ -214,6 +251,12 @@ export default function AdminPage() {
     const t = setTimeout(() => { setDeckPage(1); loadDecks(); }, 400);
     return () => clearTimeout(t);
   }, [deckSearch]);
+
+  useEffect(() => {
+    if (activeTab !== 'avatars') return;
+    const t = setTimeout(() => { loadAvatars(); }, 400);
+    return () => clearTimeout(t);
+  }, [avatarSearch]);
 
   // Actions
   const handleUpdateRole = async (userId, newRole) => {
@@ -262,6 +305,90 @@ export default function AdminPage() {
     setConfirm(null);
   };
 
+  // Avatar Handlers
+  const handleToggleAvatarActive = async (avatarId, currentActive) => {
+    try {
+      await avatarService.adminUpdate(avatarId, { isActive: !currentActive });
+      showToast(`Đã ${!currentActive ? 'kích hoạt' : 'ẩn'} avatar thành công!`);
+      loadAvatars();
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Lỗi cập nhật trạng thái avatar', 'error');
+    }
+  };
+
+  const handleDeleteAvatar = async (avatarId) => {
+    try {
+      await avatarService.adminDelete(avatarId);
+      showToast('Đã xóa avatar khỏi hệ thống thành công');
+      loadAvatars();
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Lỗi xóa avatar', 'error');
+    }
+    setConfirm(null);
+  };
+
+  const handleSeedDefaultAvatars = async () => {
+    try {
+      await avatarService.adminSeedDefaults('append');
+      showToast('Đã nạp bộ sưu tập avatar và meme mẫu mặc định thành công!');
+      loadAvatars();
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Lỗi nạp avatar mặc định', 'error');
+    }
+    setConfirm(null);
+  };
+
+  const handleSaveAvatar = async (e) => {
+    e.preventDefault();
+    if (!avatarModal?.form?.name?.trim() || !avatarModal?.form?.url?.trim()) {
+      showToast('Vui lòng điền tên và đường dẫn ảnh', 'error');
+      return;
+    }
+    setAvatarSubmitting(true);
+    try {
+      if (avatarModal.mode === 'create') {
+        await avatarService.adminCreate(avatarModal.form);
+        showToast('Đã thêm avatar mới thành công!');
+      } else {
+        await avatarService.adminUpdate(avatarModal.form._id, avatarModal.form);
+        showToast('Đã cập nhật avatar thành công!');
+      }
+      setAvatarModal(null);
+      loadAvatars();
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Lỗi lưu avatar', 'error');
+    } finally {
+      setAvatarSubmitting(false);
+    }
+  };
+
+  // Nén ảnh tải lên từ máy tính cho Avatar
+  const handleAvatarFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const minDim = Math.min(img.width, img.height);
+        const startX = (img.width - minDim) / 2;
+        const startY = (img.height - minDim) / 2;
+        canvas.width = 240;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, 240, 240);
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        setAvatarModal((prev) => ({
+          ...prev,
+          form: { ...prev.form, url: compressed },
+        }));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -276,6 +403,7 @@ export default function AdminPage() {
     { id: 'dashboard', label: t('admin.tab_dashboard'), icon: LayoutDashboard },
     { id: 'users', label: t('admin.tab_users'), icon: Users },
     { id: 'decks', label: t('admin.tab_decks'), icon: BookOpen },
+    { id: 'avatars', label: t('admin.tab_avatars'), icon: Laugh },
   ];
 
   return (
@@ -827,6 +955,223 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* ===== QUẢN LÝ AVATAR & MEMES STUDIO ===== */}
+      {activeTab === 'avatars' && (
+        <div className="space-y-6">
+          {/* Header & Thống kê nhanh */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">{t('admin.total_avatars')}</span>
+              <span className="text-2xl font-black text-slate-800 mt-1 block">{avatarStats?.total ?? avatars.length}</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-white border border-emerald-100 bg-emerald-50/30 shadow-2xs">
+              <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider block">{t('admin.active_avatars')}</span>
+              <span className="text-2xl font-black text-emerald-700 mt-1 block">{avatarStats?.activeCount ?? avatars.filter(a => a.isActive).length}</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-white border border-amber-100 bg-amber-50/30 shadow-2xs">
+              <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider block">{t('admin.inactive_avatars')}</span>
+              <span className="text-2xl font-black text-amber-700 mt-1 block">{avatarStats?.inactiveCount ?? avatars.filter(a => !a.isActive).length}</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-white border border-indigo-100 bg-indigo-50/30 shadow-2xs">
+              <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider block">Danh mục / Thể loại</span>
+              <span className="text-2xl font-black text-indigo-700 mt-1 block">{avatarStats?.categoryStats?.length || 5}</span>
+            </div>
+          </div>
+
+          {/* Thanh công cụ tìm kiếm và hành động */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+            {/* Lọc theo Category */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 custom-scrollbar">
+              {[
+                { id: 'all', label: 'Tất cả' },
+                { id: 'characters', label: 'Nhân vật & Anime' },
+                { id: 'robots', label: 'Robot' },
+                { id: 'emoji', label: 'Emoji' },
+                { id: 'intellectual', label: 'Tri thức' },
+                { id: 'memes', label: '🔥 Meme Bất Hủ' },
+              ].map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setAvatarCategoryFilter(c.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap border ${
+                    avatarCategoryFilter === c.id
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tìm kiếm & Nút hành động */}
+            <div className="flex items-center gap-2.5">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={avatarSearch}
+                  onChange={(e) => setAvatarSearch(e.target.value)}
+                  placeholder="Tìm theo tên avatar, meme..."
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setAvatarModal({
+                    isOpen: true,
+                    mode: 'create',
+                    form: {
+                      name: '',
+                      category: avatarCategoryFilter !== 'all' ? avatarCategoryFilter : 'characters',
+                      url: '',
+                      isActive: true,
+                      order: 0,
+                    },
+                  })
+                }
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs hover:scale-105 active:scale-95 transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{t('admin.add_avatar_btn')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setConfirm({
+                    type: 'seed_avatars',
+                    name: 'Nạp bộ sưu tập avatar và meme mẫu mặc định',
+                  })
+                }
+                title="Khôi phục hoặc nạp thêm 57+ avatar & meme kinh điển vào hệ thống"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span className="hidden sm:inline">{t('admin.seed_avatars_btn')}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Lưới hiển thị danh sách Avatar */}
+          {loadingAvatars ? (
+            <div className="py-16 text-center">
+              <LoadingSpinner message="Đang tải danh sách avatar..." />
+            </div>
+          ) : avatars.length === 0 ? (
+            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-2xs">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+                <Laugh className="w-8 h-8" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-800">Chưa có avatar nào phù hợp</h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                Hiện chưa có avatar nào trong danh mục này hoặc chưa nạp dữ liệu vào hệ thống.
+              </p>
+              <button
+                onClick={handleSeedDefaultAvatars}
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Nạp 57+ Avatar & Meme Mẫu Ngay</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {avatars.map((item) => (
+                <div
+                  key={item._id}
+                  className={`p-3.5 rounded-2xl bg-white border transition-all hover:shadow-md flex flex-col justify-between ${
+                    item.isActive ? 'border-slate-200' : 'border-slate-200/60 opacity-60 bg-slate-50/50'
+                  }`}
+                >
+                  <div>
+                    {/* Ảnh Preview */}
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 mb-2.5">
+                      <img
+                        src={item.url}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {/* Badge Category */}
+                      <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider bg-slate-900/70 text-white backdrop-blur-xs">
+                        {item.category}
+                      </span>
+                      {/* Trạng thái Bật / Tắt */}
+                      <span
+                        className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full ring-2 ring-white ${
+                          item.isActive ? 'bg-emerald-500' : 'bg-slate-400'
+                        }`}
+                        title={item.isActive ? 'Đang hiển thị' : 'Đang ẩn'}
+                      />
+                    </div>
+
+                    {/* Tên avatar */}
+                    <h4 className="text-xs font-bold text-slate-800 truncate" title={item.name}>
+                      {item.name}
+                    </h4>
+                  </div>
+
+                  {/* Thanh nút hành động */}
+                  <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between gap-1">
+                    {/* Nút Toggle On/Off */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleAvatarActive(item._id, item.isActive)}
+                      className={`text-[11px] font-bold px-2 py-1 rounded-lg transition ${
+                        item.isActive
+                          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                      title="Bấm để Bật/Tắt hiển thị cho học viên"
+                    >
+                      {item.isActive ? 'Hiện' : 'Ẩn'}
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {/* Nút Sửa */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAvatarModal({
+                            isOpen: true,
+                            mode: 'edit',
+                            form: { ...item },
+                          })
+                        }
+                        className="p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
+                        title="Chỉnh sửa thông tin avatar"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Nút Xóa */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfirm({
+                            type: 'avatar',
+                            id: item._id,
+                            name: item.name,
+                          })
+                        }
+                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                        title="Xóa avatar này"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Preview Deck Modal */}
       {previewDeck && (
         <div
@@ -906,6 +1251,173 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* Avatar Modal (Thêm mới / Chỉnh sửa) */}
+      {avatarModal?.isOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget && !avatarSubmitting) setAvatarModal(null); }}
+        >
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Laugh className="w-5 h-5 text-indigo-600" />
+                <span>{avatarModal.mode === 'create' ? t('admin.add_avatar_btn') : 'Chỉnh sửa Avatar'}</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setAvatarModal(null)}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAvatar} className="mt-4 space-y-4">
+              {/* Preview ảnh hiện tại */}
+              <div className="flex items-center gap-4 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white border border-slate-200 shrink-0 shadow-xs flex items-center justify-center">
+                  {avatarModal.form.url ? (
+                    <img src={avatarModal.form.url} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-6 h-6 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-bold text-slate-700 block truncate">
+                    {avatarModal.form.name || 'Tên avatar...'}
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-semibold block capitalize">
+                    {avatarModal.form.category}
+                  </span>
+                  <label
+                    htmlFor="admin-avatar-upload"
+                    className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold cursor-pointer transition"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Tải ảnh từ máy</span>
+                    <input
+                      id="admin-avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Tên avatar */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  {t('admin.avatar_name')} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={avatarModal.form.name || ''}
+                  onChange={(e) =>
+                    setAvatarModal((prev) => ({
+                      ...prev,
+                      form: { ...prev.form, name: e.target.value },
+                    }))
+                  }
+                  placeholder="VD: Doge, Luna, Gigachad..."
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                />
+              </div>
+
+              {/* Danh mục */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  {t('admin.avatar_category')} *
+                </label>
+                <select
+                  value={avatarModal.form.category || 'characters'}
+                  onChange={(e) =>
+                    setAvatarModal((prev) => ({
+                      ...prev,
+                      form: { ...prev.form, category: e.target.value },
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 font-medium"
+                >
+                  <option value="characters">Nhân vật & Anime (characters)</option>
+                  <option value="robots">Robot & Tương lai (robots)</option>
+                  <option value="emoji">Emoji & Vui vẻ (emoji)</option>
+                  <option value="intellectual">Tri thức & Nghệ thuật (intellectual)</option>
+                  <option value="memes">🔥 Meme Bất Hủ (memes)</option>
+                </select>
+              </div>
+
+              {/* Đường dẫn URL ảnh */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  {t('admin.avatar_url')} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={avatarModal.form.url || ''}
+                  onChange={(e) =>
+                    setAvatarModal((prev) => ({
+                      ...prev,
+                      form: { ...prev.form, url: e.target.value },
+                    }))
+                  }
+                  placeholder="https://... hoặc data:image/jpeg;base64,..."
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                />
+              </div>
+
+              {/* Trạng thái Kích hoạt */}
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                <div>
+                  <span className="text-xs font-bold text-slate-800 block">Kích hoạt hiển thị</span>
+                  <span className="text-[11px] text-slate-400">Cho phép học viên nhìn thấy và chọn avatar này</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={avatarModal.form.isActive}
+                  onChange={(e) =>
+                    setAvatarModal((prev) => ({
+                      ...prev,
+                      form: { ...prev.form, isActive: e.target.checked },
+                    }))
+                  }
+                  className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                />
+              </div>
+
+              {/* Nút hành động */}
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setAvatarModal(null)}
+                  disabled={avatarSubmitting}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={avatarSubmitting}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {avatarSubmitting ? (
+                    <span>Đang lưu...</span>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>{avatarModal.mode === 'create' ? 'Tạo mới' : 'Lưu thay đổi'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Confirm Modal */}
       {confirm && (
         <ConfirmModal
@@ -913,13 +1425,18 @@ export default function AdminPage() {
           message={
             confirm.type === 'user'
               ? `${t('admin.confirm_delete_user')} "${confirm.name}"`
-              : `${t('admin.confirm_delete_deck')} "${confirm.name}"`
+              : confirm.type === 'deck'
+              ? `${t('admin.confirm_delete_deck')} "${confirm.name}"`
+              : confirm.type === 'avatar'
+              ? `${t('admin.confirm_delete_avatar')} "${confirm.name}"`
+              : t('admin.confirm_seed_avatar')
           }
-          onConfirm={() =>
-            confirm.type === 'user'
-              ? handleDeleteUser(confirm.id)
-              : handleDeleteDeck(confirm.id)
-          }
+          onConfirm={() => {
+            if (confirm.type === 'user') handleDeleteUser(confirm.id);
+            else if (confirm.type === 'deck') handleDeleteDeck(confirm.id);
+            else if (confirm.type === 'avatar') handleDeleteAvatar(confirm.id);
+            else if (confirm.type === 'seed_avatars') handleSeedDefaultAvatars();
+          }}
           onCancel={() => setConfirm(null)}
         />
       )}
