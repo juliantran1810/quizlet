@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { Globe, Check, ChevronDown } from 'lucide-react';
 
-export default function LanguageSelector({ compact = false, className = '' }) {
+export default function LanguageSelector({ compact = false, dropUp = false, className = '' }) {
   const { language, setLanguage, languages, currentLanguage } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -38,7 +38,7 @@ export default function LanguageSelector({ compact = false, className = '' }) {
 
       {/* Menu dropdown chọn ngôn ngữ */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-44 rounded-2xl bg-white border border-slate-200 shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+        <div className={`absolute ${dropUp ? 'bottom-full mb-2' : 'mt-2'} ${dropUp ? 'right-0 sm:right-0' : 'right-0'} w-44 rounded-2xl bg-white border border-slate-200 shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150`}>
           <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 flex items-center gap-1.5">
             <Globe className="w-3.5 h-3.5 text-indigo-500" />
             <span>Ngôn ngữ / Language</span>

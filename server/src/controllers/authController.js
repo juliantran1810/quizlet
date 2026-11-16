@@ -1,6 +1,8 @@
+import { randomInt } from 'crypto';
 import User from '../models/User.js';
 import Otp from '../models/Otp.js';
 import { generateToken } from '../utils/generateToken.js';
+import { sendOtpEmail, shouldExposeDevOtp } from '../utils/sendEmail.js';
 
 // @desc    Gửi mã OTP xác thực email khi đăng ký
 // @route   POST /api/auth/send-otp
@@ -48,8 +50,8 @@ export const sendRegisterOtp = async (req, res) => {
 
     // Lưu hoặc cập nhật OTP vào DB (tự hết hạn sau 10 phút)
     await Otp.findOneAndUpdate(
-      { email: email.toLowerCase() },
-      { otp, createdAt: new Date() },
+      { email: email.toLowerCase(), purpose: 'register' },
+      { otp, attempts: 0, createdAt: new Date() },
       { upsert: true, new: true }
     );
 
@@ -86,7 +88,7 @@ export const verifyOtpRegister = async (req, res) => {
     const cleanOtp = String(otp).trim();
 
     // Tìm mã OTP trong DB
-    const otpRecord = await Otp.findOne({ email: cleanEmail });
+    const otpRecord = await Otp.findOne({ email: cleanEmail, purpose: 'register' });
     if (!otpRecord || otpRecord.otp !== cleanOtp) {
       return res.status(400).json({
         status: 'fail',
@@ -118,7 +120,7 @@ export const verifyOtpRegister = async (req, res) => {
     });
 
     // Xóa OTP đã sử dụng
-    await Otp.deleteOne({ email: cleanEmail });
+    await Otp.deleteOne({ email: cleanEmail, purpose: 'register' });
 
     const token = generateToken(user._id);
 
@@ -372,6 +374,147 @@ export const changePassword = async (req, res) => {
     res.status(200).json({
       status: 'success',
       message: 'Đổi mật khẩu thành công. Vui lòng ghi nhớ mật khẩu mới của bạn.',
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+const OTP_RESEND_COOLDOWN_MS = 60 * 1000; // Chỉ cho gửi lại mã sau 60 giây
+const MAX_OTP_ATTEMPTS = 5; // Nhập sai quá 5 lần thì phải xin mã mới
+const FORGOT_PASSWORD_MESSAGE =
+  'Nếu email tồn tại trong hệ thống, mã OTP đặt lại mật khẩu đã được gửi (có hiệu lực trong 10 phút)';
+
+// @desc    Gửi mã OTP đặt lại mật khẩu về email
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const forgotPassword = async (req, res) => {
+  try {
+    const email = String(req.body.email || '').toLowerCase().trim();
+
+    if (!email) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Vui lòng cung cấp địa chỉ email',
+      });
+    }
+
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Địa chỉ email không hợp lệ',
+      });
+    }
+
+    // Luôn trả cùng một thông báo dù email có tồn tại hay không để tránh dò tài khoản
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(200).json({ status: 'success', message: FORGOT_PASSWORD_MESSAGE });
+    }
+
+    // Chống spam: đang trong thời gian chờ thì không gửi mã mới
+    const existing = await Otp.findOne({ email, purpose: 'reset' });
+    if (existing && Date.now() - existing.createdAt.getTime() < OTP_RESEND_COOLDOWN_MS) {
+      return res.status(200).json({ status: 'success', message: FORGOT_PASSWORD_MESSAGE });
+    }
+
+    const otp = randomInt(100000, 1000000).toString();
+
+    await Otp.findOneAndUpdate(
+      { email, purpose: 'reset' },
+      { otp, attempts: 0, createdAt: new Date() },
+      { upsert: true, new: true }
+    );
+
+    const emailSent = await sendOtpEmail({
+      to: email,
+      otp,
+      subject: 'Memora - Mã OTP đặt lại mật khẩu',
+      heading: 'Bạn vừa yêu cầu đặt lại mật khẩu tài khoản Memora.',
+    });
+
+    if (!emailSent) {
+      console.log(`[AUTH OTP] Mã OTP đặt lại mật khẩu cho ${email}: ${otp}`);
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: FORGOT_PASSWORD_MESSAGE,
+      // Chỉ có ở môi trường dev khi chưa cấu hình SMTP
+      ...(shouldExposeDevOtp(emailSent) ? { devOtp: otp } : {}),
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+// @desc    Xác thực OTP và đặt mật khẩu mới
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Vui lòng cung cấp email, mã OTP và mật khẩu mới',
+      });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự',
+      });
+    }
+
+    const cleanEmail = String(email).toLowerCase().trim();
+    const cleanOtp = String(otp).trim();
+
+    const otpRecord = await Otp.findOne({ email: cleanEmail, purpose: 'reset' });
+    if (!otpRecord) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Mã OTP không chính xác hoặc đã hết hạn. Vui lòng yêu cầu mã mới!',
+      });
+    }
+
+    if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+      await Otp.deleteOne({ _id: otpRecord._id });
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã OTP mới!',
+      });
+    }
+
+    if (otpRecord.otp !== cleanOtp) {
+      otpRecord.attempts += 1;
+      await otpRecord.save();
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Mã OTP không chính xác hoặc đã hết hạn. Vui lòng thử lại!',
+      });
+    }
+
+    const user = await User.findOne({ email: cleanEmail }).select('+password');
+    if (!user) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Mã OTP không chính xác hoặc đã hết hạn. Vui lòng yêu cầu mã mới!',
+      });
+    }
+
+    // Gán rồi save() để hook pre-save mã hóa mật khẩu
+    user.password = newPassword;
+    await user.save();
+
+    await Otp.deleteMany({ email: cleanEmail, purpose: 'reset' });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.',
     });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });

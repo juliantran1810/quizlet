@@ -10,6 +10,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DeckDetailPage from './pages/DeckDetailPage';
 import CreateEditDeckPage from './pages/CreateEditDeckPage';
 import FlashcardStudyPage from './pages/FlashcardStudyPage';
@@ -55,6 +56,7 @@ function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/decks/:id" element={<DeckDetailPage />} />
 
           {/* Protected routes */}

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import LanguageSelector from './LanguageSelector';
 import {
   Sparkles,
   PlusCircle,
@@ -110,9 +109,6 @@ export default function Navbar() {
               <div className="h-6 w-px bg-slate-200 mx-1" />
 
               <div className="flex items-center gap-2">
-                {/* Language Selector */}
-                <LanguageSelector />
-
                 {/* Daily Streak Flame Badge */}
                 <Link
                   to="/account?tab=decks"
@@ -163,7 +159,6 @@ export default function Navbar() {
             <div className="w-24 h-8 bg-slate-100 rounded-xl animate-pulse" />
           ) : (
             <div className="flex items-center gap-2">
-              <LanguageSelector />
               <Link
                 to="/login"
                 className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition"
@@ -182,9 +177,6 @@ export default function Navbar() {
 
         {/* Mobile Action Controls (< md screens) */}
         <div className="flex md:hidden items-center gap-2">
-          {/* Mobile Language Selector */}
-          <LanguageSelector compact={true} />
-
           {user && (
             <Link
               to="/account"

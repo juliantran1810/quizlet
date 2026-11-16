@@ -240,21 +240,19 @@ export default function HomePage() {
               <div className="flex items-center bg-slate-100 p-1 rounded-xl self-start">
                 <button
                   onClick={() => setViewScope('all')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                    viewScope === 'all'
-                      ? 'bg-white text-indigo-700 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${viewScope === 'all'
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   {t('home.all_scope')} ({decks.length})
                 </button>
                 <button
                   onClick={() => setViewScope('my')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                    viewScope === 'my'
-                      ? 'bg-white text-indigo-700 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${viewScope === 'my'
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   {t('nav.my_decks')} ({myDecksCount})
                 </button>
@@ -271,11 +269,10 @@ export default function HomePage() {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1 rounded-lg font-medium whitespace-nowrap transition ${
-                    selectedCategory === cat
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-medium whitespace-nowrap transition ${selectedCategory === cat
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
                 >
                   {formatCategory(cat)}
                 </button>
@@ -334,11 +331,10 @@ export default function HomePage() {
                         </span>
                         {isOwner && (
                           <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                              deck.isPublic
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-amber-50 text-amber-800'
-                            }`}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${deck.isPublic
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-amber-50 text-amber-800'
+                              }`}
                           >
                             {deck.isPublic ? <Globe className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
                             {deck.isPublic ? t('deck.public') : t('deck.private')}
@@ -392,6 +388,13 @@ export default function HomePage() {
                       <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px] flex items-center justify-center border border-slate-200">
                         {deck.author?.username?.slice(0, 1).toUpperCase() || 'U'}
                       </div>
+                      {/* <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-xs font-bold text-slate-600 shrink-0 shadow-2xs">
+                        {u.avatar ? (
+                          <img src={u.avatar} alt={u.username} className="w-full h-full object-cover" />
+                        ) : (
+                          u.username.slice(0, 2).toUpperCase()
+                        )}
+                      </div> */}
                       <span className="text-xs text-slate-500 font-medium truncate max-w-[100px]">
                         {deck.author?.username || t('home.anonymous')}
                       </span>

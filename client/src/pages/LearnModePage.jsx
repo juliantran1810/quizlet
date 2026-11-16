@@ -147,7 +147,7 @@ export default function LearnModePage() {
       {
         card: currentCard,
         userAnswer: inputValue.trim(),
-        targetAnswer,
+        targetAnswer: answerTarget,
         isCorrect: isMatch,
         hint: currentCard.hint,
         partOfSpeech: currentCard.partOfSpeech,

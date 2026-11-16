@@ -1,0 +1,16 @@
+{
+  "name": "memora",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Memora - chạy cả server và client từ thư mục gốc",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "start": "concurrently -n server,client -c blue,green \"npm --prefix server run start\" \"npm --prefix client run dev\"",
+    "build": "npm --prefix client run build",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "seed": "npm --prefix server run seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BookOpen } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import LanguageSelector from './LanguageSelector';
 
 export default function Footer() {
   const { t } = useLanguage();
@@ -13,8 +14,10 @@ export default function Footer() {
           <span className="font-bold text-slate-800">Memora</span>
           <span>— {t('footer.slogan')}</span>
         </div>
+
+        {/* Language Selector (mở lên trên vì nằm ở cuối trang) */}
+        <LanguageSelector dropUp />
       </div>
     </footer>
   );
 }
-
