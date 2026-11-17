@@ -3,7 +3,7 @@
 // 2. Nodemailer SMTP (Gmail, Outlook, v.v.) - Thích hợp cho môi trường local hoặc server mở cổng 465/587.
 
 export const isEmailConfigured = () =>
-  Boolean(process.env.RESEND_API_KEY || process.env.SMTP_HOST);
+  Boolean(process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST);
 
 // Cho phép trả mã OTP trong response khi:
 // - Ở môi trường dev/local và email chưa gửi được qua mạng thật
@@ -13,6 +13,15 @@ export const shouldExposeDevOtp = (emailSent) =>
   (!emailSent && process.env.NODE_ENV !== 'production');
 
 export const sendOtpEmail = async ({ to, otp, subject, heading }) => {
+  const emailText = `${heading}\n\nMã OTP của bạn: ${otp}\nMã có hiệu lực trong 10 phút. Nếu bạn không yêu cầu, hãy bỏ qua email này.`;
+  const emailHtml = `
+    <div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:16px">
+      <h2 style="color:#4f46e5;margin:0 0 8px">Memora</h2>
+      <p style="color:#334155">${heading}</p>
+      <p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#0f172a;text-align:center;margin:24px 0">${otp}</p>
+      <p style="color:#64748b;font-size:13px">Mã có hiệu lực trong 10 phút. Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
+    </div>`;
+
   // 1. Ưu tiên gửi qua Resend HTTP API (Port 443 HTTPS - Hoạt động 100% trên Render Free)
   const resendApiKey = process.env.RESEND_API_KEY?.trim();
   if (resendApiKey) {
@@ -28,14 +37,8 @@ export const sendOtpEmail = async ({ to, otp, subject, heading }) => {
           from,
           to: [to],
           subject,
-          text: `${heading}\n\nMã OTP của bạn: ${otp}\nMã có hiệu lực trong 10 phút. Nếu bạn không yêu cầu, hãy bỏ qua email này.`,
-          html: `
-            <div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:16px">
-              <h2 style="color:#4f46e5;margin:0 0 8px">Memora</h2>
-              <p style="color:#334155">${heading}</p>
-              <p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#0f172a;text-align:center;margin:24px 0">${otp}</p>
-              <p style="color:#64748b;font-size:13px">Mã có hiệu lực trong 10 phút. Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
-            </div>`,
+          text: emailText,
+          html: emailHtml,
         }),
       });
 
@@ -51,7 +54,42 @@ export const sendOtpEmail = async ({ to, otp, subject, heading }) => {
     }
   }
 
-  // 2. Gửi qua Nodemailer SMTP nếu có cấu hình SMTP_HOST
+  // 2. Gửi qua SendGrid HTTP API (Port 443 HTTPS)
+  const sendgridApiKey = process.env.SENDGRID_API_KEY?.trim();
+  if (sendgridApiKey) {
+    try {
+      const fromEmail = process.env.SENDGRID_FROM?.trim() || process.env.SMTP_USER?.trim() || 'dinhtrieu1810@gmail.com';
+      const fromName = 'Memora';
+      const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sendgridApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: to }] }],
+          from: { email: fromEmail, name: fromName },
+          subject,
+          content: [
+            { type: 'text/plain', value: emailText },
+            { type: 'text/html', value: emailHtml },
+          ],
+        }),
+      });
+
+      if (res.status >= 200 && res.status < 300) {
+        console.log(`[EMAIL-SENDGRID] Đã gửi OTP thành công đến ${to}`);
+        return true;
+      }
+
+      const errBody = await res.json().catch(() => ({}));
+      console.error('[EMAIL-SENDGRID] Gửi qua SendGrid API thất bại:', errBody);
+    } catch (err) {
+      console.error('[EMAIL-SENDGRID] Lỗi kết nối SendGrid:', err.message);
+    }
+  }
+
+  // 3. Gửi qua Nodemailer SMTP nếu có cấu hình SMTP_HOST
   if (process.env.SMTP_HOST) {
     try {
       const { default: nodemailer } = await import('nodemailer');
