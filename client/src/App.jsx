@@ -1,5 +1,12 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  RouterProvider,
+  Route,
+  Navigate,
+  Outlet,
+} from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import Navbar from './components/Navbar';
@@ -47,95 +54,99 @@ const QARoute = ({ children }) => {
   return children;
 };
 
-function AppRoutes() {
+function RootLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 font-['Plus_Jakarta_Sans',sans-serif]">
       <Navbar />
       <div className="flex-1">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/decks/:id" element={<DeckDetailPage />} />
-
-          {/* Protected routes */}
-          <Route
-            path="/create"
-            element={
-              <PrivateRoute>
-                <CreateEditDeckPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/decks/:id/edit"
-            element={
-              <PrivateRoute>
-                <CreateEditDeckPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/account"
-            element={
-              <PrivateRoute>
-                <ManageAccountPage />
-              </PrivateRoute>
-            }
-          />
-
-          {/* Interactive Study & Game Modes */}
-          <Route path="/decks/:id/flashcards" element={<FlashcardStudyPage />} />
-          <Route path="/decks/:id/learn" element={<LearnModePage />} />
-          <Route path="/decks/:id/quiz" element={<QuizModePage />} />
-          <Route path="/decks/:id/match" element={<MatchGamePage />} />
-          <Route path="/decks/:id/gravity" element={<GravityGamePage />} />
-
-          {/* Admin */}
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminPage />
-              </AdminRoute>
-            }
-          />
-
-          {/* QA Bug Tracker (Jira) - Chỉ QA và Admin */}
-          <Route
-            path="/bugs"
-            element={
-              <QARoute>
-                <BugTrackerPage />
-              </QARoute>
-            }
-          />
-          <Route
-            path="/qa"
-            element={
-              <QARoute>
-                <BugTrackerPage />
-              </QARoute>
-            }
-          />
-
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Outlet />
       </div>
       <Footer />
     </div>
   );
 }
 
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route element={<RootLayout />}>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/decks/:id" element={<DeckDetailPage />} />
+
+      {/* Protected routes */}
+      <Route
+        path="/create"
+        element={
+          <PrivateRoute>
+            <CreateEditDeckPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/decks/:id/edit"
+        element={
+          <PrivateRoute>
+            <CreateEditDeckPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/account"
+        element={
+          <PrivateRoute>
+            <ManageAccountPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Interactive Study & Game Modes */}
+      <Route path="/decks/:id/flashcards" element={<FlashcardStudyPage />} />
+      <Route path="/decks/:id/learn" element={<LearnModePage />} />
+      <Route path="/decks/:id/quiz" element={<QuizModePage />} />
+      <Route path="/decks/:id/match" element={<MatchGamePage />} />
+      <Route path="/decks/:id/gravity" element={<GravityGamePage />} />
+
+      {/* Admin */}
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
+        }
+      />
+
+      {/* QA Bug Tracker (Jira) - Chỉ QA và Admin */}
+      <Route
+        path="/bugs"
+        element={
+          <QARoute>
+            <BugTrackerPage />
+          </QARoute>
+        }
+      />
+      <Route
+        path="/qa"
+        element={
+          <QARoute>
+            <BugTrackerPage />
+          </QARoute>
+        }
+      />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Route>
+  )
+);
+
 export default function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
+        <RouterProvider router={router} />
       </AuthProvider>
     </LanguageProvider>
   );

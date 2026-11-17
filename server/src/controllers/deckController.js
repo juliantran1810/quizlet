@@ -289,12 +289,73 @@ export const deleteDeck = async (req, res) => {
   }
 };
 
+// In-memory cache cho các từ đã tra cứu/dịch để phản hồi tức thì 0ms
+const translationCache = new Map();
+
+// Tra cứu từ điển trực tuyến miễn phí (Google Translate GTX) khi cơ sở dữ liệu chưa có
+const fetchOnlineTranslation = async (query, category = '') => {
+  const trimmed = query.trim();
+  if (!trimmed || trimmed.length > 100) return null;
+
+  const cacheKey = `${trimmed.toLowerCase()}_${category || ''}`;
+  if (translationCache.has(cacheKey)) {
+    return translationCache.get(cacheKey);
+  }
+
+  try {
+    const isChinese = /[\u4e00-\u9fff]/.test(trimmed);
+    const targetLang = 'vi'; // Ưu tiên trả về nghĩa tiếng Việt làm flashcard
+
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&dt=bd&q=${encodeURIComponent(trimmed)}`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(1800) });
+    if (!response.ok) return null;
+    const data = await response.json();
+
+    const mainTrans = data[0]?.map((item) => item[0]?.trim()).filter(Boolean) || [];
+    const dictDefs = [];
+    if (Array.isArray(data[1])) {
+      for (const entry of data[1]) {
+        if (Array.isArray(entry[1])) {
+          dictDefs.push(...entry[1]);
+        }
+      }
+    }
+
+    const allDefs = [...new Set([...mainTrans, ...dictDefs])]
+      .map((d) => d.trim())
+      .filter((d) => d && d.toLowerCase() !== trimmed.toLowerCase())
+      .slice(0, 5);
+
+    if (allDefs.length === 0) return null;
+
+    const result = {
+      term: trimmed,
+      pinyin: '',
+      definitions: allDefs,
+      source: 'online_dict',
+    };
+
+    translationCache.set(cacheKey, result);
+    // Giới hạn bộ nhớ cache tối đa 2000 từ để tối ưu RAM
+    if (translationCache.size > 2000) {
+      const firstKey = translationCache.keys().next().value;
+      translationCache.delete(firstKey);
+    }
+
+    return result;
+  } catch {
+    return null;
+  }
+};
+
 // @desc    Lấy gợi ý thuật ngữ và định nghĩa thông minh (Autocomplete / Smart Suggestions)
 // @route   GET /api/decks/suggestions
 // @access  Public
 export const getTermSuggestions = async (req, res) => {
   try {
     const query = (req.query.q || '').trim();
+    const category = (req.query.category || '').trim();
+
     if (!query) {
       return res.status(200).json({
         status: 'success',
@@ -369,6 +430,28 @@ export const getTermSuggestions = async (req, res) => {
         return a.term.length - b.term.length;
       })
       .slice(0, 8); // Tối đa 8 gợi ý phù hợp nhất
+
+    // 3. Fallback Online Dictionary: Nếu chưa có từ khớp chính xác hoặc có ít gợi ý
+    const hasExactMatch = results.some(
+      (r) => r.term.toLowerCase() === lowerQ
+    );
+
+    if (!hasExactMatch || results.length < 2) {
+      const onlineMatch = await fetchOnlineTranslation(query, category);
+      if (onlineMatch && onlineMatch.definitions.length > 0) {
+        const existingIdx = results.findIndex(
+          (r) => r.term.toLowerCase() === lowerQ
+        );
+        if (existingIdx !== -1) {
+          // Gộp thêm nghĩa phong phú từ online vào từ đã có
+          const merged = [...new Set([...results[existingIdx].definitions, ...onlineMatch.definitions])];
+          results[existingIdx].definitions = merged.slice(0, 6);
+        } else {
+          // Đưa từ dịch online lên đầu danh sách để làm lựa chọn số 1
+          results.unshift(onlineMatch);
+        }
+      }
+    }
 
     res.status(200).json({
       status: 'success',

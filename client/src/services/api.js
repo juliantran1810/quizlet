@@ -105,8 +105,8 @@ export const deckService = {
     const res = await api.patch(`/decks/${id}/visibility`, { isPublic });
     return res.data;
   },
-  getSuggestions: async (query) => {
-    const res = await api.get('/decks/suggestions', { params: { q: query } });
+  getSuggestions: async (query, category) => {
+    const res = await api.get('/decks/suggestions', { params: { q: query, category } });
     return res.data;
   },
 };

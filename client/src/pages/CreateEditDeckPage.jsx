@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useNavigate, useParams, Link, useBlocker } from 'react-router-dom';
 import { deckService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Sparkles,
   AlertCircle,
+  AlertTriangle,
   HelpCircle,
   Image as ImageIcon,
   Languages,
@@ -61,7 +62,7 @@ const getPinyin = async (text) => {
 };
 
 // ----- Modal Bulk Import -----
-function BulkImportModal({ onClose, onImport }) {
+function BulkImportModal({ onClose, onImport, isEnglishDeck }) {
   const { t } = useLanguage();
   const [rawText, setRawText] = useState('');
   const [termSep, setTermSep] = useState('auto'); // Mặc định tự động nhận diện (Tab, Phẩy, Gạch, Chấm phẩy)
@@ -243,9 +244,9 @@ function BulkImportModal({ onClose, onImport }) {
           <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-xs text-blue-800 space-y-1.5">
             <p className="font-bold flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {t('bulk_import.format_guide')}</p>
             <p>• {t('bulk_import.guide_line1')}</p>
-            <p>• {t('bulk_import.guide_example_tab')} <code className="bg-blue-100 px-1 rounded">爱	Yêu</code></p>
-            <p>• {t('bulk_import.guide_example_comma')} <code className="bg-blue-100 px-1 rounded">你好,Xin chào</code></p>
-            <p>• {t('bulk_import.guide_example_dash')} <code className="bg-blue-100 px-1 rounded">谢谢 - Cảm ơn</code></p>
+            <p>• {t('bulk_import.guide_example_tab')} <code className="bg-blue-100 px-1 rounded">{isEnglishDeck ? 'apple	Quả táo' : '爱	Yêu'}</code></p>
+            <p>• {t('bulk_import.guide_example_comma')} <code className="bg-blue-100 px-1 rounded">{isEnglishDeck ? 'banana,Quả chuối' : '你好,Xin chào'}</code></p>
+            <p>• {t('bulk_import.guide_example_dash')} <code className="bg-blue-100 px-1 rounded">{isEnglishDeck ? 'challenge - Thách thức' : '谢谢 - Cảm ơn'}</code></p>
           </div>
 
           {/* Chọn ký tự phân tách */}
@@ -286,7 +287,7 @@ function BulkImportModal({ onClose, onImport }) {
               rows={8}
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
-              placeholder={t('bulk_import.paste_ph')}
+              placeholder={isEnglishDeck ? t('bulk_import.paste_ph_en') : t('bulk_import.paste_ph_cn')}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-mono resize-none bg-slate-50"
             />
           </div>
@@ -375,6 +376,65 @@ function BulkImportModal({ onClose, onImport }) {
   );
 }
 
+// ----- Modal Xác nhận khi rời trang lúc đang tạo dở dang (Pop up Are You Sure) -----
+function LeaveConfirmationModal({ isOpen, onStay, onLeave }) {
+  const { t } = useLanguage();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onStay();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onStay]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full p-6 sm:p-7 space-y-5 animate-scale-up">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 shadow-xs">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-extrabold text-slate-800">
+              {t('create_deck.leave_confirm_title')}
+            </h3>
+            <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
+              {t('create_deck.leave_confirm_desc')}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onStay}
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition active:scale-95"
+          >
+            {t('create_deck.leave_confirm_stay')}
+          </button>
+          <button
+            type="button"
+            onClick={onLeave}
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition active:scale-95"
+          >
+            {t('create_deck.leave_confirm_leave')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ----- MAIN PAGE -----
 export default function CreateEditDeckPage() {
   const { id } = useParams();
@@ -406,7 +466,12 @@ export default function CreateEditDeckPage() {
   const [termSuggestions, setTermSuggestions] = useState([]);
   const [defSuggestionsMap, setDefSuggestionsMap] = useState({});
   const suggestionTimeoutRef = useRef(null);
+  const suggestReqIdRef = useRef(0);
   const cardListRef = useRef(null);
+
+  // Theo dõi trạng thái đã lưu / chưa lưu để cảnh báo người dùng khi thoát
+  const initialDataRef = useRef(null);
+  const isSubmittedRef = useRef(false);
 
   // Đóng dropdown category & suggestions khi click ra ngoài
   useEffect(() => {
@@ -443,6 +508,22 @@ export default function CreateEditDeckPage() {
             ? deck.cards
             : [...deck.cards, { term: '', pinyin: '', definition: '', hint: '', imageUrl: '' }];
           setCards(loaded);
+
+          // Ghi nhớ trạng thái ban đầu của deck để so sánh thay đổi
+          initialDataRef.current = JSON.stringify({
+            title: deck.title,
+            description: deck.description || '',
+            category: deck.category || '🇨🇳 Tiếng Trung',
+            isPublic: deck.isPublic !== undefined ? deck.isPublic : true,
+            cards: loaded.map((c) => ({
+              term: (c.term || '').trim(),
+              pinyin: (c.pinyin || '').trim(),
+              definition: (c.definition || '').trim(),
+              hint: (c.hint || '').trim(),
+              imageUrl: (c.imageUrl || '').trim(),
+              partOfSpeech: c.partOfSpeech || '',
+            })),
+          });
         })
         .catch((err) => setError(t('create_deck.error_load') + (err.response?.data?.message || err.message)))
         .finally(() => setLoading(false));
@@ -458,12 +539,21 @@ export default function CreateEditDeckPage() {
     if (!trimmed) {
       setTermSuggestions([]);
       setActiveSuggestIndex(null);
+      setDefSuggestionsMap((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
       return;
     }
 
+    const currentReqId = ++suggestReqIdRef.current;
+
     suggestionTimeoutRef.current = setTimeout(async () => {
       try {
-        const res = await deckService.getSuggestions(trimmed);
+        const res = await deckService.getSuggestions(trimmed, category);
+        if (currentReqId !== suggestReqIdRef.current) return; // Bỏ qua nếu có request mới hơn đang xử lý
+
         const list = res.data?.suggestions || [];
         setTermSuggestions(list);
         if (list.length > 0) {
@@ -483,7 +573,7 @@ export default function CreateEditDeckPage() {
       } catch (err) {
         console.warn('Lỗi lấy gợi ý từ vựng:', err);
       }
-    }, 250);
+    }, 200);
   };
 
   // Tra cứu gợi ý định nghĩa khi người dùng trỏ vào ô Definition
@@ -491,20 +581,19 @@ export default function CreateEditDeckPage() {
     const cardTerm = cards[index]?.term?.trim();
     if (!cardTerm) return;
 
-    if (!defSuggestionsMap[index] || defSuggestionsMap[index].length === 0) {
-      try {
-        const res = await deckService.getSuggestions(cardTerm);
-        const list = res.data?.suggestions || [];
-        const match = list.find((item) => item.term.toLowerCase() === cardTerm.toLowerCase()) || list[0];
-        if (match && match.definitions?.length > 0) {
-          setDefSuggestionsMap((prev) => ({
-            ...prev,
-            [index]: match.definitions,
-          }));
-        }
-      } catch (err) {
-        console.warn('Lỗi lấy gợi ý định nghĩa:', err);
+    // Luôn đảm bảo nạp hoặc cập nhật gợi ý cho thuật ngữ hiện tại
+    try {
+      const res = await deckService.getSuggestions(cardTerm, category);
+      const list = res.data?.suggestions || [];
+      const match = list.find((item) => item.term.toLowerCase() === cardTerm.toLowerCase()) || list[0];
+      if (match && match.definitions?.length > 0) {
+        setDefSuggestionsMap((prev) => ({
+          ...prev,
+          [index]: match.definitions,
+        }));
       }
+    } catch (err) {
+      console.warn('Lỗi lấy gợi ý định nghĩa:', err);
     }
   };
 
@@ -577,6 +666,15 @@ export default function CreateEditDeckPage() {
       return;
     }
     setCards(cards.filter((_, i) => i !== index));
+    setDefSuggestionsMap((prev) => {
+      const next = {};
+      Object.entries(prev).forEach(([k, v]) => {
+        const kNum = Number(k);
+        if (kNum < index) next[kNum] = v;
+        else if (kNum > index) next[kNum - 1] = v;
+      });
+      return next;
+    });
   };
 
   // Thêm thẻ từ Bulk Import vào cuối danh sách (tự động đảm bảo Pinyin)
@@ -625,9 +723,11 @@ export default function CreateEditDeckPage() {
 
       if (isEditMode) {
         await deckService.update(id, payload);
+        isSubmittedRef.current = true;
         navigate(`/decks/${id}`);
       } else {
         const res = await deckService.create(payload);
+        isSubmittedRef.current = true;
         navigate(`/decks/${res.data.deck._id}`);
       }
     } catch (err) {
@@ -638,21 +738,137 @@ export default function CreateEditDeckPage() {
   };
 
   const catLower = (category || '').toLowerCase();
-  const isChineseDeck = category === 'Tiếng Trung' || catLower.includes('trung') || catLower.includes('chinese');
-  const isEnglishDeck = category === 'Tiếng Anh' || catLower.includes('anh') || catLower.includes('english');
+  const titleLower = (title || '').toLowerCase();
+
+  const isEnglishDeck =
+    category === 'Tiếng Anh' ||
+    catLower.includes('anh') ||
+    catLower.includes('english') ||
+    catLower.includes('ielts') ||
+    catLower.includes('toeic') ||
+    titleLower.includes('ielts') ||
+    titleLower.includes('toeic') ||
+    titleLower.includes('english') ||
+    titleLower.includes('tiếng anh');
+
+  const isChineseDeck =
+    !isEnglishDeck &&
+    (category === 'Tiếng Trung' ||
+      catLower.includes('trung') ||
+      catLower.includes('chinese') ||
+      catLower.includes('hsk') ||
+      titleLower.includes('hsk') ||
+      titleLower.includes('tiếng trung') ||
+      cards.some((c) => isHanzi(c.term)));
+
   const shouldShowPinyin = (card) => {
     if (isEnglishDeck) return false;
     if (isChineseDeck) return true;
     return Boolean(card.pinyin || isHanzi(card.term));
   };
 
+  // Nhận diện trạng thái có dữ liệu chỉnh sửa chưa lưu (Unsaved / Dirty changes)
+  const isDirty = useMemo(() => {
+    if (isSubmittedRef.current) return false;
+    if (!isEditMode) {
+      const hasTitle = Boolean(title.trim());
+      const hasDesc = Boolean(description.trim());
+      const hasCards = cards.some(
+        (c) => c.term?.trim() || c.definition?.trim() || c.hint?.trim() || c.imageUrl?.trim()
+      );
+      const extraCards = cards.length > 2;
+      return hasTitle || hasDesc || hasCards || extraCards;
+    }
+
+    if (!initialDataRef.current) return false;
+    const currentData = JSON.stringify({
+      title: title,
+      description: description || '',
+      category: category || '🇨🇳 Tiếng Trung',
+      isPublic: isPublic !== undefined ? isPublic : true,
+      cards: cards.map((c) => ({
+        term: (c.term || '').trim(),
+        pinyin: (c.pinyin || '').trim(),
+        definition: (c.definition || '').trim(),
+        hint: (c.hint || '').trim(),
+        imageUrl: (c.imageUrl || '').trim(),
+        partOfSpeech: c.partOfSpeech || '',
+      })),
+    });
+    return currentData !== initialDataRef.current;
+  }, [isEditMode, title, description, category, isPublic, cards]);
+
+  // Hook chặn chuyển trang trong ứng dụng (SPA navigation) khi có dữ liệu chưa lưu
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      !isSubmittedRef.current && isDirty && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // Chặn đóng tab / reload trình duyệt ngoài ứng dụng (beforeunload)
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty && !isSubmittedRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Lấy nhãn và placeholder thông minh phù hợp với từng ngôn ngữ của bộ thẻ
+  const getDeckTitlePlaceholder = () => {
+    if (isEnglishDeck) return t('create_deck.title_ph_en');
+    if (isChineseDeck) return t('create_deck.title_ph_cn');
+    return t('create_deck.title_ph_general');
+  };
+
+  const getTermLabel = () => {
+    if (isEnglishDeck) return t('create_deck.term_label_en');
+    if (isChineseDeck) return t('create_deck.term_label_cn');
+    return t('create_deck.term_label_general');
+  };
+
+  const getTermPlaceholder = () => {
+    if (isEnglishDeck) return t('create_deck.term_ph_en');
+    if (isChineseDeck) return t('create_deck.term_ph_cn');
+    return t('create_deck.term_ph_general');
+  };
+
+  const getDefLabel = () => {
+    if (isEnglishDeck) return t('create_deck.def_label_en');
+    if (isChineseDeck) return t('create_deck.def_label_cn');
+    return t('create_deck.def_label_general');
+  };
+
+  const getDefPlaceholder = () => {
+    if (isEnglishDeck) return t('create_deck.def_ph_en');
+    if (isChineseDeck) return t('create_deck.def_ph_cn');
+    return t('create_deck.def_ph_general');
+  };
+
+  const getHintPlaceholder = () => {
+    if (isEnglishDeck) return t('create_deck.hint_ph_en');
+    if (isChineseDeck) return t('create_deck.hint_ph_cn');
+    return t('create_deck.hint_ph_general');
+  };
+
   if (loading) return <LoadingSpinner message={t('create_deck.loading_deck')} />;
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* Pop up Are You Sure khi có thay đổi chưa lưu */}
+      <LeaveConfirmationModal
+        isOpen={blocker.state === 'blocked'}
+        onStay={() => blocker.reset && blocker.reset()}
+        onLeave={() => blocker.proceed && blocker.proceed()}
+      />
+
       {/* Bulk Import Modal */}
       {showBulkImport && (
         <BulkImportModal
+          isEnglishDeck={isEnglishDeck}
           onClose={() => setShowBulkImport(false)}
           onImport={handleBulkImport}
         />
@@ -717,7 +933,7 @@ export default function CreateEditDeckPage() {
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('create_deck.title_ph')}
+              placeholder={getDeckTitlePlaceholder()}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium transition"
             />
           </div>
@@ -935,7 +1151,7 @@ export default function CreateEditDeckPage() {
                 <div className="relative">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                      {t('create_deck.term_label')}
+                      {getTermLabel()}
                     </label>
                     <span className="text-[11px] text-indigo-500 font-medium flex items-center gap-1">
                       <Sparkles className="w-3 h-3" /> {t('create_deck.word_suggestions')}
@@ -953,6 +1169,8 @@ export default function CreateEditDeckPage() {
                         e.preventDefault();
                         const defInput = document.querySelector(`input[data-card-def="${index}"]`);
                         if (defInput) defInput.focus();
+                      } else if (e.key === 'Escape') {
+                        setActiveSuggestIndex(null);
                       }
                     }}
                     onFocus={() => {
@@ -960,7 +1178,12 @@ export default function CreateEditDeckPage() {
                         fetchTermSuggestions(index, card.term);
                       }
                     }}
-                    placeholder={t('create_deck.term_ph')}
+                    onBlur={() => {
+                      setTimeout(() => {
+                        setActiveSuggestIndex((curr) => (curr === index ? null : curr));
+                      }, 250);
+                    }}
+                    placeholder={getTermPlaceholder()}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-xl font-bold text-slate-800"
                   />
 
@@ -1020,7 +1243,7 @@ export default function CreateEditDeckPage() {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                      {t('create_deck.def_label')}
+                      {getDefLabel()}
                     </label>
                     {defSuggestionsMap[index]?.length > 0 && (
                       <span className="text-[11px] text-amber-600 font-medium flex items-center gap-1">
@@ -1047,7 +1270,7 @@ export default function CreateEditDeckPage() {
                       }
                     }}
                     onFocus={() => handleFocusDefinition(index)}
-                    placeholder={t('create_deck.def_ph')}
+                    placeholder={getDefPlaceholder()}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm text-slate-800"
                   />
 
@@ -1120,7 +1343,7 @@ export default function CreateEditDeckPage() {
                     type="text"
                     value={card.hint || ''}
                     onChange={(e) => handleCardChange(index, 'hint', e.target.value)}
-                    placeholder={t('create_deck.hint_ph')}
+                    placeholder={getHintPlaceholder()}
                     className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-500 text-xs"
                   />
                 </div>
