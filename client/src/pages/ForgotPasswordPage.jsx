@@ -95,11 +95,13 @@ export default function ForgotPasswordPage() {
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200/80 p-8 shadow-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
+            step === 'done' ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'
+          }`}>
             {step === 'done' ? <CheckCircle2 className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />}
           </div>
           <h2 className="text-2xl font-extrabold text-slate-800">
-            {step === 'email' ? t('auth.forgot_title') : t('auth.reset_title')}
+            {step === 'done' ? 'Thành công!' : step === 'email' ? t('auth.forgot_title') : t('auth.reset_title')}
           </h2>
           <p className="text-sm text-slate-500 mt-1">
             {step === 'email' && t('auth.forgot_subtitle')}
@@ -139,6 +141,23 @@ export default function ForgotPasswordPage() {
               <Send className="w-4 h-4" />
               {submitting ? t('common.loading') : t('auth.forgot_send_btn')}
             </button>
+
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!email.trim()) {
+                    setError('Vui lòng nhập địa chỉ email của bạn trước');
+                    return;
+                  }
+                  setError('');
+                  setStep('reset');
+                }}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline transition"
+              >
+                Đã có mã OTP? Bấm vào đây để nhập mã
+              </button>
+            </div>
           </form>
         )}
 
@@ -247,12 +266,19 @@ export default function ForgotPasswordPage() {
 
         {/* Bước 3: thành công */}
         {step === 'done' && (
-          <Link
-            to="/login"
-            className="w-full py-3 px-4 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition shadow-sm flex items-center justify-center gap-2"
-          >
-            {t('auth.login_now')}
-          </Link>
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
+              <p className="text-sm font-semibold text-emerald-800">
+                {t('auth.reset_success')}
+              </p>
+            </div>
+            <Link
+              to="/login"
+              className="w-full py-3 px-4 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition shadow-sm flex items-center justify-center gap-2"
+            >
+              {t('auth.login_now')}
+            </Link>
+          </div>
         )}
 
         {step !== 'done' && (

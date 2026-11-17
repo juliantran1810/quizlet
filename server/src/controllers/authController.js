@@ -399,7 +399,7 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         status: 'fail',
@@ -407,16 +407,25 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    // Luôn trả cùng một thông báo dù email có tồn tại hay không để tránh dò tài khoản
+    // Kiểm tra tài khoản có tồn tại không để thông báo rõ ràng cho người dùng
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(200).json({ status: 'success', message: FORGOT_PASSWORD_MESSAGE });
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Không tìm thấy tài khoản nào với địa chỉ email này. Vui lòng kiểm tra lại!',
+      });
     }
 
-    // Chống spam: đang trong thời gian chờ thì không gửi mã mới
+    // Chống spam: đang trong thời gian chờ (60s) thì thông báo thời gian còn lại
     const existing = await Otp.findOne({ email, purpose: 'reset' });
     if (existing && Date.now() - existing.createdAt.getTime() < OTP_RESEND_COOLDOWN_MS) {
-      return res.status(200).json({ status: 'success', message: FORGOT_PASSWORD_MESSAGE });
+      const remainingSeconds = Math.ceil(
+        (OTP_RESEND_COOLDOWN_MS - (Date.now() - existing.createdAt.getTime())) / 1000
+      );
+      return res.status(429).json({
+        status: 'fail',
+        message: `Mã OTP đã được gửi trước đó. Vui lòng đợi ${remainingSeconds}s nữa trước khi yêu cầu gửi lại!`,
+      });
     }
 
     const otp = randomInt(100000, 1000000).toString();
@@ -436,12 +445,25 @@ export const forgotPassword = async (req, res) => {
 
     if (!emailSent) {
       console.log(`[AUTH OTP] Mã OTP đặt lại mật khẩu cho ${email}: ${otp}`);
+
+      if (shouldExposeDevOtp(emailSent)) {
+        return res.status(200).json({
+          status: 'success',
+          message: 'Mã OTP thử nghiệm đã được tạo (xem trực tiếp trên màn hình)',
+          devOtp: otp,
+        });
+      }
+
+      return res.status(500).json({
+        status: 'fail',
+        message:
+          'Không thể gửi email OTP (Máy chủ hosting Render chặn cổng SMTP 25/465/587). Vui lòng cấu hình RESEND_API_KEY hoặc bật ALLOW_DEV_OTP=true trên trang Environment Variables của hosting.',
+      });
     }
 
     res.status(200).json({
       status: 'success',
-      message: FORGOT_PASSWORD_MESSAGE,
-      // Chỉ có ở môi trường dev khi chưa cấu hình SMTP
+      message: 'Mã OTP đặt lại mật khẩu đã được gửi đến email của bạn (có hiệu lực trong 10 phút)',
       ...(shouldExposeDevOtp(emailSent) ? { devOtp: otp } : {}),
     });
   } catch (error) {
@@ -492,9 +514,10 @@ export const resetPassword = async (req, res) => {
     if (otpRecord.otp !== cleanOtp) {
       otpRecord.attempts += 1;
       await otpRecord.save();
+      const remainingAttempts = MAX_OTP_ATTEMPTS - otpRecord.attempts;
       return res.status(400).json({
         status: 'fail',
-        message: 'Mã OTP không chính xác hoặc đã hết hạn. Vui lòng thử lại!',
+        message: `Mã OTP không chính xác. Bạn còn ${remainingAttempts} lần thử!`,
       });
     }
 
